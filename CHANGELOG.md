@@ -1,5 +1,47 @@
 # Changelog
 
+## v1.1.2 — 堅牢化＆ポリッシュアップデート
+
+### 新機能 / 改善
+
+- **EMC概略図砲のEMCトグル復活**: `Menu#supportsEmc()` が ContainerData 同期前に false を返し、Screen の `init()` 時点で EMC ON/OFF ボタンが生成されない不具合を修正(BlockEntity 直接委譲に変更)。
+- **不足アイテム名表示**: GUI の「不足ブロック」表示にアイコンの隣にローカライズされたアイテム名を併記。
+- **強化型概略図砲の専用ビジュアル**: 強化型に独自 GUI 背景(EMC燃料スロットアイコン無し)と砲身前面テクスチャを追加し、ブロック種別で動的切替。EMC型は無変更。
+
+### マルチプレイ堅牢化
+
+- **オーナー UUID ハイジャック修正**: `createMenu` で他プレイヤーが GUI を開くだけでオーナーが上書きされる問題を修正。`IDLE/FINISHED/ERROR` 時または `ownerUUID == null` の時のみ更新。
+- **パケット所有権チェック**: `CannonActionPacket` / `CannonSettingsPacket` でオーナー以外からの操作を拒否(OPは `permissions(2)` で許可)。
+- **パケット入力検証**: `Action.values()[i]` の範囲チェック、`RangeBoardEditPacket` の editMode を 0..2 に制限、`WandDistancePacket` の距離値を `Mth.clamp` で正規化。
+
+### AE2 自動クラフト
+
+- **キャノン位置を含む追跡**: `PendingCraftKey` に `cannonPos` を追加。同一 ME 網に複数キャノンがある場合の相互干渉を解消。
+- **リクエストストーム対策**: レシピ未登録時のリトライ間隔を 1 秒 → 30 秒に延長。
+- **共有ステートレース修正**: シミュレーション用 Requester を per-call 化し、`AE2GridNodeManager.simulationSource` の上書き競合を排除。
+- **リソースリーク対策**: AE2 側からジョブ完了通知が来ない場合でも、5 分タイムアウトで PendingCraft を強制クリーンアップ。
+
+### GUI / UX
+
+- **タブクリック貫通修正**: `SettingsTabWidget` / `SpeedTabWidget` / `InformationTabWidget` の mouseClicked が無条件 true を返してしまい、空白部分のクリックで下層スロットに反応しない問題を修正。
+- **スピードスライダーのspam解消**: ドラッグ中は描画のみ、リリース時に1回だけパケット送信に変更。クリック/ドラッグ判定の 1px ずれも統一。
+- **設定同期改善**: `syncCooldown` を 10 → 30 tick に延長し、ドラッグ中は server 値で上書きしないように修正(値が戻る UX バグ解消)。
+- **燃料消費ガード**: `consumeFuelItems` を `state == RUNNING` のときのみ動作するように制限。
+- **fromNetwork フォールバック改善**: client BE 未到着時のダミー BE に `setLevel` をセットし、`stillValid()` 即 false で Screen が瞬時閉じる UX バグを回避。ProjectE 不在環境では `ENHANCED_CANNON_BLOCK` を fallback。
+
+### 内部 / 将来互換
+
+- **NeoForge 将来互換**: `EnergyStorage.energy` のリフレクションを廃止。サブクラス `InternalEnergyStorage` の `consumeInternal(int)` で安全に内部消費。
+- **巨大範囲スパイク防止**: `scanRemoveRange` に `MAX_AIR_VOLUME_PLACEMENTS` (50,000) 体積上限を追加し、サーバ tick スパイクを防止。
+- **Create バージョン制約**: `neoforge.mods.toml` の Create 依存範囲を `[0.5,)` → `[6.0,)` に厳格化(`AllDataComponents` API は Create 6.x 以上必須)。
+
+### 作者・メタ情報
+
+- **作者**: hololocheck → **BelugaLab** に変更。
+- **mod_version**: 1.2.0 → **1.1.2**。
+
+---
+
 ## v1.1.0 — Gen2 GUI アップデート
 
 ### 新機能
