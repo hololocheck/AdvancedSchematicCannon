@@ -1,3 +1,6 @@
 {
-	"parent": "advancedschematicannon:block/emc_schematic_cannon/item"
+	"parent": "advancedschematicannon:block/emc_schematic_cannon/item",
+	"textures": {
+		"9": "advancedschematicannon:block/cannon_barrel_front_enhanced"
+	}
 }
