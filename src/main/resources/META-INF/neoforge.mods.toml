@@ -6,7 +6,7 @@ license = "MIT"
 modId = "advancedschematicannon"
 # ${file.jarVersion} は moddev plugin との組み合わせで "0.0NONE" になることがあるため
 # 直接バージョン指定する(リリース時は gradle.properties の mod_version と一致させる)
-version = "1.1.2"
+version = "1.1.2.1"
 displayName = "Advanced Schematic Cannon"
 logoFile = "icon.png"
 description = '''
