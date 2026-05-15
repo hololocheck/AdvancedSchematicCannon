@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.1.2.1 — 致命バグ修正＆ビジュアル整合パッチ
+
+### バグ修正
+
+- **ProjectE 非導入環境でのツール採掘速度バグ修正** (PR #4 / @nekorobi-0): `data/minecraft/tags/block/mineable/pickaxe.json` が条件付き登録ブロック `advancedschematicannon:emc_schematic_cannon` を必須エントリで参照していたため、ProjectE 不在時に `minecraft:mineable/pickaxe` タグ全体が破壊され、バニラ含む全ブロックの tier 判定不能(ダイヤピッケル等が素手と同速)になっていた問題を修正。`{ "id": "...", "required": false }` でラップし、未登録時は警告ログのみで安全にスキップするように変更。
+- **強化型概略図砲の手持ちテクスチャ修正**: アイテムモデルが EMC 型の `block/emc_schematic_cannon/item.json` を parent としており、texture key `#9` が EMC 型の砲身前面テクスチャを指していたため、強化型を手に持つと EMC 型の見た目になる問題を修正。子モデル側で `#9` を `cannon_barrel_front_enhanced` にオーバーライドする方式に変更(本体形状や他テクスチャは共有を維持)。
+
+### メタ情報
+
+- **mod_version**: 1.1.2 → **1.1.2.1** (`gradle.properties`)
+- **ゲーム内 Mod 欄表示**: `neoforge.mods.toml` の `version` ハードコード値も 1.1.2.1 に同期。
+- **README デザイン刷新**: SpatialAudioSystem と同一のレイアウトに統一(中央寄せロゴ、シールド行、JP/EN 切替、Spec/Detail テーブル形式)。
+- **インデント整形**: PR #4 の修正でずれていた `pickaxe.json` のインデントを 2 スペースに統一(機能影響なし)。
+
+---
+
 ## v1.1.2 — 堅牢化＆ポリッシュアップデート
 
 ### 新機能 / 改善
