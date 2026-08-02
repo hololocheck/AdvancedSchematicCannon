@@ -83,5 +83,20 @@
     "tooltip.advancedschematicannon.wand_shift_scroll": "Shift+Scroll: Adjust distance (1-15)",
     "message.advancedschematicannon.wand_distance": "Distance: %d blocks",
     "message.advancedschematicannon.wand_distance_reset": "Distance reset: %d blocks",
-    "tooltip.advancedschematicannon.wand_shift_middle": "Shift+Middle Click: Reset distance"
+    "tooltip.advancedschematicannon.wand_shift_middle": "Shift+Middle Click: Reset distance",
+    "gui.advancedschematicannon.io": "I/O",
+    "gui.advancedschematicannon.inventory": "Inventory",
+    "gui.advancedschematicannon.close": "Close",
+    "gui.advancedschematicannon.hint": "Hints",
+    "gui.advancedschematicannon.storage": "Storage",
+    "gui.advancedschematicannon.reuse": "Reuse",
+    "gui.advancedschematicannon.visibility": "Preview",
+    "gui.advancedschematicannon.reuse.hint": "Keep the schematic after the build finishes instead of consuming it.",
+    "gui.advancedschematicannon.visibility.hint": "Show the build area outline in the world.",
+    "gui.advancedschematicannon.speed.hint": "Blocks placed per tick (1-256). Hover and scroll to change.",
+    "gui.advancedschematicannon.storage.hint": "Where materials are taken from. In Remove mode, where they are put back. Hover and scroll to change.",
+    "gui.advancedschematicannon.settings.replace_section": "Replace Mode",
+    "gui.advancedschematicannon.filler.section": "Filler Module",
+    "gui.advancedschematicannon.mode.hint": "Pick the operating mode and its option. Click to open.",
+    "gui.advancedschematicannon.owner": "Owner"
 }

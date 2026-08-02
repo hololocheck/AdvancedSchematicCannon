@@ -25,6 +25,9 @@ public class AdvancedSchematicCannon {
 
     public AdvancedSchematicCannon(IEventBus modEventBus) {
         LOGGER.info("Advanced Schematic Cannon initializing...");
+        // assets/advancedschematicannon/wiki/ を Manta の wiki に登録する。
+        // これが無いと 📖 を押しても ASC のページが 1 枚も見つからない。
+        com.manta.MantaBootstrap.registerWikiMod(MOD_ID);
         ModRegistry.register(modEventBus);
         com.example.advancedschematicannon.item.ModDataComponents.register(modEventBus);
 
@@ -42,7 +45,7 @@ public class AdvancedSchematicCannon {
 
     private void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModRegistry.EMC_CANNON_MENU.get(),
-                com.example.advancedschematicannon.gui.EMCSchematicCannonScreen::new);
+                com.example.advancedschematicannon.gui.EMCSchematicCannonScreenV2::new);
     }
 
     private void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {

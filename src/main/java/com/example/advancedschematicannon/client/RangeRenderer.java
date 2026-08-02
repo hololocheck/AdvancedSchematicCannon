@@ -3,6 +3,7 @@ package com.example.advancedschematicannon.client;
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
 import com.example.advancedschematicannon.ModRegistry;
 import com.example.advancedschematicannon.item.ModDataComponents;
+import belugalab.tsu.api.SmoothFollow;
 import com.example.advancedschematicannon.item.RangeBoardItem;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -31,13 +32,15 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 public class RangeRenderer {
 
     private static final double MAX_LOOK_DISTANCE = 64.0;
-    /** 補間の速度 (値が大きいほど早く追従) */
-    private static final float LERP_SPEED = 12.0f;
 
-    // なめらかな補間用の状態
-    private static double smoothX = 0, smoothY = 0, smoothZ = 0;
-    private static boolean smoothInitialized = false;
-    private static long lastNano = System.nanoTime();
+    /**
+     * 視線追従のスムージング。自前の {@code smoothX/Y/Z + updateSmooth()} を
+     * {@link SmoothFollow} に置き換えた — 同 class は TSU の
+     * StationRangeRenderer / TrainPresetRangeRenderer にあった<b>同一コードの重複を集約</b>
+     * したもので、ASC のこれは 3 つめの複製だった。挙動は完全互換
+     * (LERP_SPEED 12 / dt clamp 0.1s / 未初期化時は即スナップ)。
+     */
+    private static final SmoothFollow SMOOTH = new SmoothFollow();
 
     /** プレビュー表示中の概略図砲の位置を登録（BlockEntityRendererから呼ばれる） */
     private static final java.util.Map<BlockPos, long[]> previewRanges = new java.util.concurrent.ConcurrentHashMap<>();
@@ -97,11 +100,11 @@ public class RangeRenderer {
             }
             if (pos2 != null) {
                 // Pos2が確定済み: 視線先(Pos1)～Pos2の範囲をなめらかに表示
-                BlockPos smoothPos = updateSmooth(lookTarget);
+                BlockPos smoothPos = SMOOTH.update(lookTarget);
                 renderBox(poseStack, camera, bufferSource, smoothPos, pos2, 0.0f, 1.0f, 1.0f, 0.3f);
             } else {
                 // Pos2も未設定: 1マスボックス
-                smoothInitialized = false;
+                SMOOTH.reset();
                 renderBox(poseStack, camera, bufferSource, lookTarget, lookTarget, 0.0f, 1.0f, 1.0f, 0.4f);
             }
             return;
@@ -115,11 +118,11 @@ public class RangeRenderer {
             }
             if (pos1 != null) {
                 // Pos1が確定済み: Pos1～視線先(Pos2)の範囲をなめらかに表示
-                BlockPos smoothPos = updateSmooth(lookTarget);
+                BlockPos smoothPos = SMOOTH.update(lookTarget);
                 renderBox(poseStack, camera, bufferSource, pos1, smoothPos, 0.0f, 1.0f, 1.0f, 0.3f);
             } else {
                 // Pos1も未設定: 1マスボックス
-                smoothInitialized = false;
+                SMOOTH.reset();
                 renderBox(poseStack, camera, bufferSource, lookTarget, lookTarget, 0.0f, 1.0f, 1.0f, 0.4f);
             }
             return;
@@ -129,7 +132,7 @@ public class RangeRenderer {
 
         // 両方未設定: 視線先に1マスのシアンボックスを表示
         if (pos1 == null && pos2 == null) {
-            smoothInitialized = false;
+            SMOOTH.reset();
             BlockPos lookTarget = getLookTargetPos();
             if (lookTarget == null) return;
             renderBox(poseStack, camera, bufferSource, lookTarget, lookTarget, 0.0f, 1.0f, 1.0f, 0.4f);
@@ -140,7 +143,7 @@ public class RangeRenderer {
         if (pos1 != null && pos2 == null) {
             BlockPos lookTarget = getLookTargetPos();
             if (lookTarget == null) return;
-            BlockPos smoothPos = updateSmooth(lookTarget);
+            BlockPos smoothPos = SMOOTH.update(lookTarget);
             renderBox(poseStack, camera, bufferSource, pos1, smoothPos, 0.0f, 1.0f, 1.0f, 0.3f);
             return;
         }
@@ -148,39 +151,8 @@ public class RangeRenderer {
         if (pos1 == null) return;
 
         // 両方設定済みの場合は補間リセット
-        smoothInitialized = false;
+        SMOOTH.reset();
         renderBox(poseStack, camera, bufferSource, pos1, pos2, 0.0f, 1.0f, 1.0f, 0.5f);
-    }
-
-    /**
-     * なめらかな補間を更新し、補間されたBlockPosを返す。
-     */
-    private static BlockPos updateSmooth(BlockPos target) {
-        long now = System.nanoTime();
-        float dt = (now - lastNano) / 1_000_000_000f;
-        lastNano = now;
-        dt = Math.min(dt, 0.1f);
-
-        double targetX = target.getX();
-        double targetY = target.getY();
-        double targetZ = target.getZ();
-
-        if (!smoothInitialized) {
-            smoothX = targetX;
-            smoothY = targetY;
-            smoothZ = targetZ;
-            smoothInitialized = true;
-        } else {
-            float factor = 1.0f - (float) Math.exp(-LERP_SPEED * dt);
-            smoothX += (targetX - smoothX) * factor;
-            smoothY += (targetY - smoothY) * factor;
-            smoothZ += (targetZ - smoothZ) * factor;
-        }
-
-        return new BlockPos(
-                (int) Math.round(smoothX),
-                (int) Math.round(smoothY),
-                (int) Math.round(smoothZ));
     }
 
     /**

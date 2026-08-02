@@ -61,7 +61,8 @@ public class EMCSchematicCannonMenu extends AbstractContainerMenu {
                             | (be.isSkipTileEntities() ? 2 : 0)
                             | (be.isUseEmc() ? 4 : 0)
                             | (be.isReuseSchematic() ? 8 : 0)
-                            | (be.supportsEmc() ? 16 : 0);
+                            | (be.supportsEmc() ? 16 : 0)
+                            | (be.isPublicAccess() ? 32 : 0);
                     case 8 -> be.getBlocksPerTick();
                     case 9 -> be.getStorageMode().ordinal();
                     case 10 -> be.isFillerMode() ? 1 : 0;
@@ -221,6 +222,8 @@ public class EMCSchematicCannonMenu extends AbstractContainerMenu {
     public boolean isSkipTileEntities() { return (data.get(7) & 2) != 0; }
     public boolean isUseEmc() { return (data.get(7) & 4) != 0; }
     public boolean isReuseSchematic() { return (data.get(7) & 8) != 0; }
+    /** 公開設定 (GUI の所有者アイコン枠の色)。bit 32 は空きだったので流用。 */
+    public boolean isPublicAccess() { return (data.get(7) & 32) != 0; }
     // BEへ直接委譲: ContainerDataはScreen.init()時点では未同期のため、
     // ここで data.get(7) を読むとEMCトグルが生成されない不具合が発生する。
     public boolean supportsEmc() { return blockEntity != null && blockEntity.supportsEmc(); }

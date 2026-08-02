@@ -29,6 +29,8 @@ repositories {
         url = 'https://www.cursemaven.com'
         content { includeGroup 'curse.maven' }
     }
+    // Manta is embedded via jarJar; this is where its obfuscated distributable lives.
+    maven { url = 'file:///C:/minecraftmode/manta/repo' }
 }
 
 neoForge {
@@ -48,6 +50,18 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+
+    // NOTE: deliberately NO unitTest.enable() here.
+    //
+    // ModDevGradle's unit-test mode boots the real FML mod loader, which reads this mod's
+    // neoforge.mods.toml and refuses to start because Create is declared `required` while
+    // being only a compileOnly dependency ("Mod advancedschematicannon requires create 6.0
+    // or above / Currently, create is not installed"). Pulling Create (+ Flywheel/Ponder)
+    // onto the test runtime just to boot FML would be a large, fragile dependency graph.
+    //
+    // The gates this repo needs — Manta layout strict validation and the control-glyph
+    // scan — are pure JVM: they operate on JSON/source text and never touch a Minecraft
+    // class. So they run on a plain JUnit classpath instead.
 }
 
 dependencies {
@@ -59,6 +73,69 @@ dependencies {
     compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17"
     // JEI API
     compileOnly "mezz.jei:jei-1.21.1-neoforge-api:19.27.0.340"
+
+    // Manta UI library. Compile against the readable jar for full signatures; ship the
+    // obfuscated one embedded (jarJar), so a user running several BelugaLab mods loads a
+    // single Manta — some candidate in every mod's range intersection (JarJar does NOT
+    // guarantee the newest). Floor = the EMBEDDED version (manta_version in
+    // gradle.properties, the single source for range/prefer/jar path/mods.toml): with
+    // every consumer declaring [embedded,2), older embedded Mantas fall out of the
+    // intersection and the newest one wins deterministically; older mods then run on it
+    // via Manta's <2.0 binary compatibility.
+    //
+    // NOTE: this repo sits one level deeper than TSU/SAS (workspace/AdvancedSchematic Cannon/repo),
+    // so the readable jar is at ../../manta, not ../manta.
+    compileOnly files("../../manta/build/libs/manta-${manta_version}.jar")
+    jarJar(implementation("com.manta:manta:[${manta_version},2)")) {
+        version { prefer manta_version }
+    }
+
+    // Unit-test infrastructure. Mirrors the Manta and SAS setup.
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // The layout gate calls Manta's own LayoutValidator, so the validation core cannot
+    // drift between the in-game `/manta validate layout` path and CI. Gson is normally
+    // supplied by Minecraft at runtime; on the plain JUnit classpath it must be explicit.
+    testImplementation files("../../manta/build/libs/manta-${manta_version}.jar")
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
+}
+
+jar {
+    // Pull the nested-jar metadata + embedded Manta into the mod jar (ModDevGradle has no
+    // jarJar.enable(); this is the equivalent wiring).
+    from(tasks.named('jarJar'))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// The deploy loop takes the "-all" jar as the Manta-carrying dev artifact, the same convention
+// TSU and SAS follow. ASC folds the jarJar output straight into its mod jar, so the two are
+// identical in content; publishing the alias keeps one deploy rule working across all mods.
+tasks.register('allJar', Copy) {
+    dependsOn tasks.named('jar')
+    from(tasks.named('jar').flatMap { it.archiveFile })
+    into layout.buildDirectory.dir('libs')
+    rename { "${base.archivesName.get()}-${version}-all.jar" }
+}
+tasks.named('build') { dependsOn 'allJar' }
+
+// Expand ${manta_version} in mods.toml from gradle.properties, keeping the required range in
+// lockstep with the embedded Manta. ${mod_version} comes from the build's own version so the
+// declared version cannot drift from the jar's filename — this file previously carried a
+// hardcoded literal, the same shape that once shipped a jar named 1.0.6 declaring 1.0.5.
+tasks.withType(ProcessResources).configureEach {
+    inputs.property 'manta_version', manta_version
+    inputs.property 'mod_version', project.version.toString()
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand manta_version: manta_version, mod_version: project.version.toString()
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

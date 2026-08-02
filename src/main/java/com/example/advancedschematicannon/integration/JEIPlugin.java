@@ -1,7 +1,7 @@
 package com.example.advancedschematicannon.integration;
 
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
-import com.example.advancedschematicannon.gui.EMCSchematicCannonScreen;
+import com.example.advancedschematicannon.gui.EMCSchematicCannonScreenV2;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
@@ -21,10 +21,10 @@ public class JEIPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-        registration.addGuiContainerHandler(EMCSchematicCannonScreen.class,
+        registration.addGuiContainerHandler(EMCSchematicCannonScreenV2.class,
                 new IGuiContainerHandler<>() {
                     @Override
-                    public List<Rect2i> getGuiExtraAreas(EMCSchematicCannonScreen screen) {
+                    public List<Rect2i> getGuiExtraAreas(EMCSchematicCannonScreenV2 screen) {
                         return screen.getExclusionAreas();
                     }
                 });

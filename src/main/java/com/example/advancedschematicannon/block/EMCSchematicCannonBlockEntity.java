@@ -56,8 +56,11 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
     public static final int SLOT_OUTPUT = 2;
     public static final int SLOT_FILLER_START = 3; // フィラーモード用: アイテム搬入スロット開始
     public static final int FILLER_SLOT_COLS = 4;
-    public static final int FILLER_SLOT_ROWS = 13;
-    public static final int FILLER_SLOT_COUNT = FILLER_SLOT_COLS * FILLER_SLOT_ROWS; // 52スロット
+    // MantaUI 移行 (2026-08-02) で 13 → 16 行。制御列を 2 列詰めにしてインベントリを上げた結果、
+    // 材料スロット枠の下に 3 行ぶんのクリアランスが空いたため。読み込み側は
+    // 「保存済みスロット数 < TOTAL_SLOTS なら拡張して中身をコピー」で移行する (下記 loadAdditional)。
+    public static final int FILLER_SLOT_ROWS = 16;
+    public static final int FILLER_SLOT_COUNT = FILLER_SLOT_COLS * FILLER_SLOT_ROWS; // 64スロット
     public static final int TOTAL_SLOTS = SLOT_FILLER_START + FILLER_SLOT_COUNT; // 55
 
     /**
@@ -119,6 +122,16 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
 
     private State state = State.IDLE;
     private UUID ownerUUID = null;
+
+    /**
+     * 公開設定。true = 誰でも設定を変更できる (GUI の所有者アイコン枠が緑)、
+     * false = 所有者と op のみ (赤)。既定は公開 — 既存ワールドの砲は
+     * この値を持たないので、読み込み時に true になり従来どおり動く。
+     *
+     * <p>判定の実体は {@code CannonSettingsPacket.handle} の所有者チェック。
+     * 表示だけのフラグにはしない。
+     */
+    private boolean publicAccess = true;
 
     private final List<BlockPlacement> pendingPlacements = new ArrayList<>();
     private int totalBlocks = 0;
@@ -814,6 +827,12 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
         tag.putString("MissingBlock", missingBlockName);
         tag.putLong("TotalEmcUsed", totalEmcUsed);
         tag.putBoolean("PreviewVisible", previewVisible);
+        // 所有者アイコン (GUI 右下) はクライアントで描くので UUID を明示的に渡す。
+        // ownerUUID はサーバー側の状態なので、これが無いと SP では動いて
+        // 専用サーバーでだけ顔が出ない (project CLAUDE.md §5.1)。
+        // 読み側は loadAdditional の hasUUID("Owner") 分岐がそのまま使われる。
+        if (ownerUUID != null) tag.putUUID("Owner", ownerUUID);
+        tag.putBoolean("PublicAccess", publicAccess);
         if (currentTarget != null) {
             tag.putInt("TargetX", currentTarget.getX());
             tag.putInt("TargetY", currentTarget.getY());
@@ -853,24 +872,65 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
      * 燃料スロットのアイテムを消費し、そのEMC価値をプレイヤーのEMCに加算する。
      * ownerUUIDが設定されている場合のみ動作。
      */
+    /** 燃料が入っているのに変換されない理由を出す診断の間引き用 (tick)。 */
+    private int fuelDiagCooldown = 0;
+
+    /**
+     * 燃料が入っているのに変換が進まないとき、**どの条件で止まったか**を 5 秒に 1 度だけ出す。
+     *
+     * <p>元は全条件が黙って return するだけで、「稼働中でない」のか「所有者がオフライン」なのか
+     * 「そのアイテムに EMC 価値が無い」のかが実機から区別できなかった。
+     * 推測で直す前に信号を作る (project CLAUDE.md §2)。
+     */
+    private void reportFuelBlocked(String reason) {
+        if (fuelDiagCooldown > 0) return;
+        fuelDiagCooldown = 100;   // 5 秒
+        AdvancedSchematicCannon.LOGGER.info(
+                "[EMC fuel] {} で変換していません (pos={}, state={}, owner={})",
+                reason, getBlockPos(), state, ownerUUID);
+    }
+
     private void consumeFuelItems() {
-        // 稼働中のみ消費。idle/finished 中に消費すると、プレイヤー不在で
-        // ownerUUID が古い場合や、想定外の EMC 増加の温床になる。
-        if (state != State.RUNNING) return;
-        if (ownerUUID == null) return;
-        if (!(level instanceof ServerLevel serverLevel)) return;
-        if (!com.example.advancedschematicannon.integration.ProjectEBridge.isLoaded()) return;
+        if (fuelDiagCooldown > 0) fuelDiagCooldown--;
 
         ItemStack fuelStack = itemHandler.getStackInSlot(SLOT_FUEL);
         if (fuelStack.isEmpty()) return;
 
+        // 2026-08-02: **稼働中限定 (state == RUNNING) の条件を外した** (ユーザー承認済み)。
+        //
+        // 旧コメントは「idle/finished 中に消費すると、プレイヤー不在で ownerUUID が古い場合や、
+        // 想定外の EMC 増加の温床になる」を理由に挙げていたが、**その「プレイヤー不在」は
+        // 下の owner == null 判定が既に担保している** — 所有者がオフラインなら加算しない。
+        // 稼働中限定は、UI 上は燃料スロットが常時見えているのに待機中は何も起きない、という
+        // 説明のつかない挙動を生んでいた (実機で 2 度報告された)。
+        // オンライン判定は残すので、旧コメントが挙げた懸念は維持されている。
+        if (ownerUUID == null) {
+            reportFuelBlocked("ownerUUID == null");
+            return;
+        }
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        if (!com.example.advancedschematicannon.integration.ProjectEBridge.isLoaded()) {
+            reportFuelBlocked("ProjectE 未ロード");
+            return;
+        }
+
         ServerPlayer owner = serverLevel.getServer().getPlayerList().getPlayer(ownerUUID);
-        if (owner == null) return;
+        if (owner == null) {
+            reportFuelBlocked("所有者がオフライン");
+            return;
+        }
 
         long emcValue = com.example.advancedschematicannon.integration.ProjectEBridge.getEmcValue(fuelStack);
-        if (emcValue <= 0) return;
+        if (emcValue <= 0) {
+            reportFuelBlocked("EMC 価値 0 (" + fuelStack.getItem() + ")");
+            return;
+        }
 
-        if (com.example.advancedschematicannon.integration.ProjectEBridge.addPlayerEmc(owner, emcValue)) {
+        if (!com.example.advancedschematicannon.integration.ProjectEBridge.addPlayerEmc(owner, emcValue)) {
+            reportFuelBlocked("addPlayerEmc が false (ProjectE API 側)");
+            return;
+        }
+        {
             fuelStack.shrink(1);
             if (fuelStack.isEmpty()) {
                 itemHandler.setStackInSlot(SLOT_FUEL, ItemStack.EMPTY);
@@ -900,7 +960,22 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
 
     private boolean parseAndLoadSchematic() {
         ItemStack schematicStack = itemHandler.getStackInSlot(SLOT_SCHEMATIC);
-        if (schematicStack.isEmpty() || !isSchematicItem(schematicStack)) {
+        // この分岐だけ無言で false を返しており、呼び出し元の
+        // "Failed to parse schematic or no schematic inserted" しか残らないため、
+        // 「スロットが空」なのか「概略図でない別アイテム」なのかを実機から区別できなかった。
+        // 概略図スロットは範囲指定ボードも受ける都合で mayPlace フィルタが無く、
+        // 任意のアイテムを入れられるので、この 2 つは実際に起こり分ける必要がある。
+        if (schematicStack.isEmpty()) {
+            AdvancedSchematicCannon.LOGGER.warn(
+                    "[schematic] スロットが空です (pos={})", getBlockPos());
+            return false;
+        }
+        if (!isSchematicItem(schematicStack)) {
+            AdvancedSchematicCannon.LOGGER.warn(
+                    "[schematic] Create の概略図ではありません: item={} class={} (pos={})",
+                    net.minecraft.core.registries.BuiltInRegistries.ITEM
+                            .getKey(schematicStack.getItem()),
+                    schematicStack.getItem().getClass().getName(), getBlockPos());
             return false;
         }
 
@@ -2148,6 +2223,8 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
     public List<BlockPlacement> getPendingPlacements() { return Collections.unmodifiableList(pendingPlacements); }
     public LinkedHashMap<String, Integer> getBlockSummary() { return blockSummary; }
     public UUID getOwnerUUID() { return ownerUUID; }
+    public boolean isPublicAccess() { return publicAccess; }
+    public void setPublicAccess(boolean v) { this.publicAccess = v; setChanged(); syncToClient(); }
     public boolean isAe2Available() { return ae2Available; }
     public String getCurrentBlockRegistryName() { return currentBlockRegistryName; }
     public long getInternalEmcBuffer() { return internalEmcBuffer; }
@@ -2164,6 +2241,7 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
         tag.putInt("PlacedBlocks", placedBlocks);
         tag.putLong("CachedEmc", cachedPlayerEmc);
         if (ownerUUID != null) tag.putUUID("Owner", ownerUUID);
+        tag.putBoolean("PublicAccess", publicAccess);
 
         tag.put("Items", itemHandler.serializeNBT(registries));
 
@@ -2242,6 +2320,8 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
         placedBlocks = tag.getInt("PlacedBlocks");
         cachedPlayerEmc = tag.getLong("CachedEmc");
         if (tag.hasUUID("Owner")) ownerUUID = tag.getUUID("Owner");
+        // 旧セーブには無いので、既定 true (= 公開) のままにする。
+        if (tag.contains("PublicAccess")) publicAccess = tag.getBoolean("PublicAccess");
 
         if (tag.contains("Items")) {
             itemHandler.deserializeNBT(registries, tag.getCompound("Items"));

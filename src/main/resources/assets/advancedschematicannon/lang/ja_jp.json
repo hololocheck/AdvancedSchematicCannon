@@ -83,5 +83,20 @@
     "tooltip.advancedschematicannon.wand_shift_scroll": "Shift+スクロール: 設置距離を調整 (1-15)",
     "message.advancedschematicannon.wand_distance": "設置距離: %dブロック",
     "message.advancedschematicannon.wand_distance_reset": "設置距離をリセット: %dブロック",
-    "tooltip.advancedschematicannon.wand_shift_middle": "Shift+ホイール押込み: 距離をリセット"
+    "tooltip.advancedschematicannon.wand_shift_middle": "Shift+ホイール押込み: 距離をリセット",
+    "gui.advancedschematicannon.io": "入出力",
+    "gui.advancedschematicannon.inventory": "インベントリ",
+    "gui.advancedschematicannon.close": "閉じる",
+    "gui.advancedschematicannon.hint": "ヒント",
+    "gui.advancedschematicannon.storage": "ストレージ",
+    "gui.advancedschematicannon.reuse": "再利用",
+    "gui.advancedschematicannon.visibility": "プレビュー",
+    "gui.advancedschematicannon.reuse.hint": "設置完了後も概略図を消費せず残します。",
+    "gui.advancedschematicannon.visibility.hint": "設置範囲の枠をワールドに表示します。",
+    "gui.advancedschematicannon.speed.hint": "1 tick あたりの設置ブロック数 (1-256)。ホバーしてホイールで変更します。",
+    "gui.advancedschematicannon.storage.hint": "材料の取り出し元。撤去モードでは搬入先になります。ホバーしてホイールで変更します。",
+    "gui.advancedschematicannon.settings.replace_section": "置換モード",
+    "gui.advancedschematicannon.filler.section": "フィラーモジュール",
+    "gui.advancedschematicannon.mode.hint": "動作モードとその細目を選びます。クリックで開きます。",
+    "gui.advancedschematicannon.owner": "所有者"
 }

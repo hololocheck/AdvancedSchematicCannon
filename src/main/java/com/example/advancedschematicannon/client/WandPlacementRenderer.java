@@ -3,6 +3,7 @@ package com.example.advancedschematicannon.client;
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
 import com.example.advancedschematicannon.ModRegistry;
 import com.example.advancedschematicannon.item.AirPlacementWandItem;
+import belugalab.tsu.api.ScrollCooldown;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -30,6 +31,12 @@ import com.example.advancedschematicannon.network.WandDistancePacket;
  */
 @EventBusSubscriber(modid = AdvancedSchematicCannon.MOD_ID, value = Dist.CLIENT)
 public class WandPlacementRenderer {
+
+    /**
+     * R3.4.1: ホイールの既定 cooldown は 180ms。旧実装は cooldown が無く、1 ノッチで
+     * 複数回 fire して距離が飛ぶ形だった。値の直編集が主操作ではないので既定値を使う。
+     */
+    private static final ScrollCooldown SCROLL = new ScrollCooldown();
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
@@ -87,6 +94,12 @@ public class WandPlacementRenderer {
         if (!stack.is(ModRegistry.AIR_PLACEMENT_WAND.get())) {
             stack = mc.player.getOffhandItem();
             if (!stack.is(ModRegistry.AIR_PLACEMENT_WAND.get())) return;
+        }
+
+        // R3.4.2: cooldown 内のホイールも消費する (バニラのホットバー切替を出さない)。
+        if (!SCROLL.tryAccept()) {
+            event.setCanceled(true);
+            return;
         }
 
         int current = AirPlacementWandItem.getDistance(stack);

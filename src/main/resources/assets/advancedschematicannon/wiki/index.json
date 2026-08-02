@@ -1,0 +1,12 @@
+{
+ "pages": [
+  "index.md",
+  "getting-started.md",
+  "cannon/overview.md",
+  "cannon/schematic-mode.md",
+  "cannon/filler-mode.md",
+  "cannon/storage.md",
+  "tools/range-board.md",
+  "tools/air-placement-wand.md"
+ ]
+}

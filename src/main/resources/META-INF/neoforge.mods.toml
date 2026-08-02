@@ -4,9 +4,11 @@ license = "MIT"
 
 [[mods]]
 modId = "advancedschematicannon"
-# ${file.jarVersion} は moddev plugin との組み合わせで "0.0NONE" になることがあるため
-# 直接バージョン指定する(リリース時は gradle.properties の mod_version と一致させる)
-version = "1.1.2.1"
+# file.jarVersion 形式の置換は moddev plugin との組み合わせで "0.0NONE" になることがあるため
+# 使わない。手書きリテラルだと jar 名と宣言版がずれる(名前 1.0.6 / 宣言 1.0.5 の実例あり)ので、
+# processResources が gradle.properties の mod_version をここへ展開する。
+# NOTE: expand はコメント行も対象なので、この注記に置換記法そのものを書かないこと。
+version = "${mod_version}"
 displayName = "Advanced Schematic Cannon"
 logoFile = "icon.png"
 description = '''
@@ -14,6 +16,18 @@ Create Schematicannon addon: an Enhanced Schematicannon variant with AE2 ME stor
 AE2 auto-crafting for missing items, AE2 cable power input, and optional ProjectE EMC support.
 '''
 authors = "BelugaLab"
+
+# Required Manta floor = the EMBEDDED version (${manta_version} from gradle.properties,
+# expanded by processResources). With every consumer declaring [embedded,2), older embedded
+# Mantas fall out of the JarJar range intersection and the newest one wins deterministically;
+# this mod then runs on it via Manta's <2.0 binary compatibility.
+# Manta ships embedded in this jar, so an ASC-only install always satisfies the range.
+[[dependencies.advancedschematicannon]]
+modId = "manta"
+type = "required"
+versionRange = "[${manta_version},2)"
+ordering = "AFTER"
+side = "BOTH"
 
 [[dependencies.advancedschematicannon]]
 modId = "neoforge"

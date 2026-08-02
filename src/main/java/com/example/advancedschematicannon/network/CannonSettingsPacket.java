@@ -66,8 +66,10 @@ public record CannonSettingsPacket(
     }
 
     /** fillerMode + previewVisible + fillerModuleをパック */
-    public static int packFillerModeAndModule(boolean fillerMode, int fillerModuleOrd, boolean previewVisible) {
-        return (fillerMode ? 1 : 0) | (previewVisible ? 2 : 0) | ((fillerModuleOrd & 0xFF) << 8);
+    public static int packFillerModeAndModule(boolean fillerMode, int fillerModuleOrd,
+                                              boolean previewVisible, boolean publicAccess) {
+        return (fillerMode ? 1 : 0) | (previewVisible ? 2 : 0) | (publicAccess ? 4 : 0)
+                | ((fillerModuleOrd & 0xFF) << 8);
     }
 
     public int replaceMode() { return replaceModeAndStorage & 0xFF; }
@@ -76,6 +78,7 @@ public record CannonSettingsPacket(
     public boolean reuseSchematic() { return (speedAndFlags & 0x10000) != 0; }
     public boolean fillerMode() { return (fillerModeAndModule & 1) != 0; }
     public boolean previewVisible() { return (fillerModeAndModule & 2) != 0; }
+    public boolean publicAccess() { return (fillerModeAndModule & 4) != 0; }
     public int fillerModule() { return (fillerModeAndModule >>> 8) & 0xFF; }
 
     @Override
@@ -93,11 +96,19 @@ public record CannonSettingsPacket(
 
             BlockEntity be = serverPlayer.level().getBlockEntity(packet.pos);
             if (be instanceof EMCSchematicCannonBlockEntity cannon) {
-                // 所有権チェック: 他人が設定を書き換えるのを防ぐ
+                // 所有権チェック。公開 (publicAccess) なら誰でも設定を触れる、
+                // 非公開なら所有者と op のみ。
                 java.util.UUID ownerId = cannon.getOwnerUUID();
-                if (ownerId != null && !ownerId.equals(serverPlayer.getUUID())
-                        && !serverPlayer.hasPermissions(2)) {
+                boolean isOwner = ownerId == null
+                        || ownerId.equals(serverPlayer.getUUID())
+                        || serverPlayer.hasPermissions(2);
+                if (!isOwner && !cannon.isPublicAccess()) {
                     return;
+                }
+                // **公開設定そのものは所有者しか変えられない** — ここを他の設定と同列に
+                // 適用すると、公開中の砲を第三者が非公開に切り替えて乗っ取れてしまう。
+                if (isOwner) {
+                    cannon.setPublicAccess(packet.publicAccess());
                 }
                 EMCSchematicCannonBlockEntity.ReplaceMode[] modes =
                         EMCSchematicCannonBlockEntity.ReplaceMode.values();
