@@ -6,7 +6,7 @@ tags: [mode]
 
 # Filler mode
 
-Works on **the region marked with the [Range Board](../tools/range-board.md)** instead of a
+Works on **the region marked with the **[**Range Board**](../tools/range-board.md) instead of a
 schematic.
 
 [[TOC]]
