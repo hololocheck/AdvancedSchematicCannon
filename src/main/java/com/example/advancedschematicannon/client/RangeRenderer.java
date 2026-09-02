@@ -3,7 +3,7 @@ package com.example.advancedschematicannon.client;
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
 import com.example.advancedschematicannon.ModRegistry;
 import com.example.advancedschematicannon.item.ModDataComponents;
-import belugalab.tsu.api.SmoothFollow;
+import com.manta.api.hud.SmoothFollow;
 import com.example.advancedschematicannon.item.RangeBoardItem;
 
 import com.mojang.blaze3d.vertex.PoseStack;

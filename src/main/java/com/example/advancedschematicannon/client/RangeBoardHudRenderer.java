@@ -1,11 +1,11 @@
 package com.example.advancedschematicannon.client;
 
-import belugalab.experience.render.Icons;
-import belugalab.tsu.api.HudAnimState;
-import belugalab.tsu.api.HudChrome;
-import belugalab.tsu.api.HudConstants;
-import belugalab.tsu.api.HudText;
-import belugalab.tsu.api.ScrollCooldown;
+import com.manta.api.render.Icons;
+import com.manta.api.hud.HudAnimState;
+import com.manta.api.hud.HudChrome;
+import com.manta.api.hud.HudConstants;
+import com.manta.api.hud.HudText;
+import com.manta.api.hud.ScrollCooldown;
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
 import com.example.advancedschematicannon.item.ModDataComponents;
 import com.example.advancedschematicannon.item.RangeBoardItem;

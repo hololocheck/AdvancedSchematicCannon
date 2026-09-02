@@ -1,13 +1,13 @@
 package com.example.advancedschematicannon.gui;
 
-import belugalab.experience.controller.NumberWheelInput;
-import belugalab.experience.controller.OverlayController;
-import belugalab.experience.controller.PixelScrollViewport;
-import belugalab.experience.controller.TileGrid;
-import belugalab.experience.controller.ToggleSwitchController;
-import belugalab.tsu.api.HintRegistry;
-import belugalab.tsu.api.HintToggleHelper;
-import belugalab.mcss3.screen.JsonLayoutScreen;
+import com.manta.api.controller.NumberWheelInput;
+import com.manta.api.controller.OverlayController;
+import com.manta.api.controller.PixelScrollViewport;
+import com.manta.api.controller.TileGrid;
+import com.manta.api.controller.ToggleSwitchController;
+import com.manta.api.hud.HintRegistry;
+import com.manta.api.hud.HintToggleHelper;
+import com.manta.api.screen.JsonLayoutScreen;
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
 import com.example.advancedschematicannon.block.EMCSchematicCannonBlockEntity;
 import com.example.advancedschematicannon.block.EMCSchematicCannonBlockEntity.FillerModule;
@@ -619,7 +619,7 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         if ("owner-face".equals(key)) {
             // UUID は BE の getUpdateTag 経由でクライアントにも来ている (§5.1 対応済み)。
             if (ownerUuid() != null) {
-                belugalab.tsu.api.OwnerFacePainter.draw(g, x, y, w, h, ownerUuid());
+                com.manta.api.hud.OwnerFacePainter.draw(g, x, y, w, h, ownerUuid());
             }
             return;
         }

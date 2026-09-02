@@ -1,9 +1,9 @@
 package com.example.advancedschematicannon.layout;
 
-import belugalab.mcss3.ir.compiler.A11yPolicy;
-import belugalab.mcss3.ir.compiler.LayoutValidator;
-import belugalab.mcss3.ir.compiler.ScreenPolicy;
-import belugalab.mcss3.ir.compiler.ValidationContext;
+import com.manta.api.ir.compiler.A11yPolicy;
+import com.manta.api.ir.compiler.LayoutValidator;
+import com.manta.api.ir.compiler.ScreenPolicy;
+import com.manta.api.ir.compiler.ValidationContext;
 import com.example.advancedschematicannon.gui.AscBindings;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

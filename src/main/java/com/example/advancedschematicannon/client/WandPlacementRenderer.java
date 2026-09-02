@@ -3,7 +3,7 @@ package com.example.advancedschematicannon.client;
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
 import com.example.advancedschematicannon.ModRegistry;
 import com.example.advancedschematicannon.item.AirPlacementWandItem;
-import belugalab.tsu.api.ScrollCooldown;
+import com.manta.api.hud.ScrollCooldown;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
