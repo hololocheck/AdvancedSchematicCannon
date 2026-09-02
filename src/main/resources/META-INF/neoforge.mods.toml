@@ -21,8 +21,9 @@ authors = "BelugaLab"
 # expanded by processResources). With every consumer declaring [embedded,3), older embedded
 # Mantas fall out of the JarJar range intersection and the newest one wins deterministically.
 # 2026-08-30 correction: this used to say "this mod then runs on it via Manta's <2.0 binary
-# compatibility". Manta 2.0 collapsed the public surface onto com.manta.api.** and deleted
-# belugalab.**, so 1.x consumers do NOT run on 2.x - mixing one in empties the range
+# compatibility". Manta 2.0 collapsed the public surface onto com.manta.api.** and retired
+# belugalab.** from it (the shipped jar repackages it; the readable jar still holds the
+# internals), so 1.x consumers do NOT link on 2.x - mixing one in empties the range
 # intersection and NeoForge stops with an explicit error.
 # Manta ships embedded in this jar, so an ASC-only install always satisfies the range.
 [[dependencies.advancedschematicannon]]

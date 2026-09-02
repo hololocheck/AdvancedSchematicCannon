@@ -83,8 +83,10 @@ dependencies {
     // intersection and the newest one wins deterministically.
     // 2026-08-30 correction: this comment used to end "older mods then run on it via
     // Manta's <2.0 binary compatibility". Manta 2.0 collapsed the public surface onto
-    // com.manta.api.** and deleted belugalab.**, so a consumer built against 1.x does NOT
-    // run on 2.x; mixing one in empties the range intersection and NeoForge stops with an
+    // com.manta.api.** and retired belugalab.** from that surface (the shipped jar
+    // repackages it; the readable jar still holds belugalab/** internals), so a consumer
+    // built against 1.x does NOT link on 2.x; mixing one in empties the range intersection
+    // and NeoForge stops with an
     // explicit error instead.
     //
     // NOTE: this repo sits one level deeper than TSU/SAS (workspace/AdvancedSchematic Cannon/repo),
