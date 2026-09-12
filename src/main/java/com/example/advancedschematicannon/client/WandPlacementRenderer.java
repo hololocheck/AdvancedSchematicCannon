@@ -71,12 +71,10 @@ public class WandPlacementRenderer {
         MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
 
         // 白色ワイヤーフレーム
-        AABB box = new AABB(
-                placePos.getX() - camera.x, placePos.getY() - camera.y, placePos.getZ() - camera.z,
-                placePos.getX() + 1 - camera.x, placePos.getY() + 1 - camera.y, placePos.getZ() + 1 - camera.z);
+        AABB box = com.manta.api.render.WorldOutline.blockSpan(placePos, placePos, camera);
 
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.lines());
-        LevelRenderer.renderLineBox(event.getPoseStack(), consumer, box, 1.0f, 1.0f, 1.0f, 0.6f);
+        com.manta.api.render.WorldOutline.box(event.getPoseStack(), bufferSource, box, 1.0f, 1.0f, 1.0f, 0.6f, false);
 
         bufferSource.endBatch();
     }

@@ -112,15 +112,7 @@ public class RangeBoardItem extends Item {
      * 遠距離レイキャストでプレイヤーの視線先のブロック位置を取得する。
      */
     private static BlockPos getLookTargetBlock(Player player, Level level) {
-        Vec3 eye = player.getEyePosition(1.0f);
-        Vec3 look = player.getLookAngle();
-        Vec3 end = eye.add(look.scale(MAX_RANGE));
-        BlockHitResult hitResult = level.clip(new ClipContext(
-                eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
-        if (hitResult.getType() == HitResult.Type.BLOCK) {
-            return hitResult.getBlockPos();
-        }
-        return null;
+        return com.manta.api.hud.LookTarget.blockPos(player, level, MAX_RANGE);
     }
 
     /**
@@ -181,11 +173,7 @@ public class RangeBoardItem extends Item {
      * プレイヤーが手に持っている範囲指定ボードを取得する。
      */
     public static ItemStack findHeldRangeBoard(Player player) {
-        ItemStack mainHand = player.getMainHandItem();
-        if (mainHand.is(ModRegistry.RANGE_BOARD_ITEM.get())) return mainHand;
-        ItemStack offHand = player.getOffhandItem();
-        if (offHand.is(ModRegistry.RANGE_BOARD_ITEM.get())) return offHand;
-        return ItemStack.EMPTY;
+        return com.manta.api.hud.HeldTools.find(player, ModRegistry.RANGE_BOARD_ITEM.get());
     }
 
     @Override
