@@ -655,10 +655,10 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
                 g.renderItem(stack, tileX, tileY);
                 if (!inRemoval) {
                     String count = formatCount(entry.getValue());
-                    int tw = font.width(count);
+                    int tw = com.manta.api.text.MantaText.uiWidth(font, count);
                     g.pose().pushPose();
                     g.pose().translate(0, 0, 200);
-                    g.drawString(font, count, tileX + 16 - tw, tileY + 8, 0xFFFFFFFF, true);
+                    com.manta.api.text.MantaText.draw(g, font, count, tileX + 16 - tw, tileY + 8, 0xFFFFFFFF);
                     g.pose().popPose();
                 }
             } else {
@@ -666,7 +666,7 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
                         ? entry.getKey().substring(entry.getKey().indexOf(':') + 1)
                         : entry.getKey();
                 if (shortName.length() > 4) shortName = shortName.substring(0, 3) + "~";
-                g.drawString(font, shortName, tileX, tileY + 1, 0xFFAAAAAA, true);
+                com.manta.api.text.MantaText.draw(g, font, shortName, tileX, tileY + 1, 0xFFAAAAAA);
             }
         }
     }
