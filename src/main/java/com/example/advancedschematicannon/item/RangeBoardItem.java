@@ -42,27 +42,7 @@ public class RangeBoardItem extends Item {
 
         // シフト+右クリック
         if (player.isShiftKeyDown()) {
-            int editMode = getEditMode(stack);
-            if (editMode == 0) {
-                // 通常モード: 全範囲クリア
-                stack.remove(ModDataComponents.RANGE_POS1.get());
-                stack.remove(ModDataComponents.RANGE_POS2.get());
-                player.displayClientMessage(
-                        Component.translatable("message.advancedschematicannon.range_cleared")
-                                .withStyle(ChatFormatting.YELLOW), true);
-            } else if (editMode == 1) {
-                // 編集モード: Pos1のみクリア
-                stack.remove(ModDataComponents.RANGE_POS1.get());
-                player.displayClientMessage(
-                        Component.translatable("message.advancedschematicannon.pos1_cleared")
-                                .withStyle(ChatFormatting.YELLOW), true);
-            } else if (editMode == 2) {
-                // 編集モード: Pos2のみクリア
-                stack.remove(ModDataComponents.RANGE_POS2.get());
-                player.displayClientMessage(
-                        Component.translatable("message.advancedschematicannon.pos2_cleared")
-                                .withStyle(ChatFormatting.YELLOW), true);
-            }
+            clearByEditMode(stack, player);
             return InteractionResult.SUCCESS;
         }
 
@@ -79,24 +59,7 @@ public class RangeBoardItem extends Item {
 
         // シフト+右クリック: クリア処理
         if (player.isShiftKeyDown()) {
-            int editMode = getEditMode(stack);
-            if (editMode == 0) {
-                stack.remove(ModDataComponents.RANGE_POS1.get());
-                stack.remove(ModDataComponents.RANGE_POS2.get());
-                player.displayClientMessage(
-                        Component.translatable("message.advancedschematicannon.range_cleared")
-                                .withStyle(ChatFormatting.YELLOW), true);
-            } else if (editMode == 1) {
-                stack.remove(ModDataComponents.RANGE_POS1.get());
-                player.displayClientMessage(
-                        Component.translatable("message.advancedschematicannon.pos1_cleared")
-                                .withStyle(ChatFormatting.YELLOW), true);
-            } else if (editMode == 2) {
-                stack.remove(ModDataComponents.RANGE_POS2.get());
-                player.displayClientMessage(
-                        Component.translatable("message.advancedschematicannon.pos2_cleared")
-                                .withStyle(ChatFormatting.YELLOW), true);
-            }
+            clearByEditMode(stack, player);
             return InteractionResultHolder.success(stack);
         }
 
@@ -118,37 +81,36 @@ public class RangeBoardItem extends Item {
     /**
      * 編集モードに応じてPos1またはPos2を設定する。
      */
+    /** shift 右クリックのクリア。useOn / use に逐語の ladder が 1 つずつあった (B8)。 */
+    private static void clearByEditMode(ItemStack stack, Player player) {
+        com.manta.api.tool.RangeSelection.Edit edit =
+                com.manta.api.tool.RangeSelection.Edit.of(getEditMode(stack));
+        boolean p1 = com.manta.api.tool.RangeSelection.clears(
+                edit, com.manta.api.tool.RangeSelection.Slot.POS1);
+        boolean p2 = com.manta.api.tool.RangeSelection.clears(
+                edit, com.manta.api.tool.RangeSelection.Slot.POS2);
+        if (p1) stack.remove(ModDataComponents.RANGE_POS1.get());
+        if (p2) stack.remove(ModDataComponents.RANGE_POS2.get());
+        String key = (p1 && p2) ? "message.advancedschematicannon.range_cleared"
+                : p1 ? "message.advancedschematicannon.pos1_cleared"
+                     : "message.advancedschematicannon.pos2_cleared";
+        player.displayClientMessage(
+                Component.translatable(key).withStyle(ChatFormatting.YELLOW), true);
+    }
+
     private static void setPosition(ItemStack stack, Player player, BlockPos pos) {
-        int editMode = getEditMode(stack);
-        if (editMode == 1) {
-            stack.set(ModDataComponents.RANGE_POS1.get(), pos);
-            player.displayClientMessage(
-                    Component.translatable("message.advancedschematicannon.pos1_set",
-                            pos.getX(), pos.getY(), pos.getZ())
-                            .withStyle(ChatFormatting.GREEN), true);
-        } else if (editMode == 2) {
-            stack.set(ModDataComponents.RANGE_POS2.get(), pos);
-            player.displayClientMessage(
-                    Component.translatable("message.advancedschematicannon.pos2_set",
-                            pos.getX(), pos.getY(), pos.getZ())
-                            .withStyle(ChatFormatting.GREEN), true);
-        } else {
-            // 通常モード: Pos1未設定→Pos1、設定済み→Pos2
-            BlockPos pos1 = stack.get(ModDataComponents.RANGE_POS1.get());
-            if (pos1 == null) {
-                stack.set(ModDataComponents.RANGE_POS1.get(), pos);
-                player.displayClientMessage(
-                        Component.translatable("message.advancedschematicannon.pos1_set",
-                                pos.getX(), pos.getY(), pos.getZ())
-                                .withStyle(ChatFormatting.GREEN), true);
-            } else {
-                stack.set(ModDataComponents.RANGE_POS2.get(), pos);
-                player.displayClientMessage(
-                        Component.translatable("message.advancedschematicannon.pos2_set",
-                                pos.getX(), pos.getY(), pos.getZ())
-                                .withStyle(ChatFormatting.GREEN), true);
-            }
-        }
+        // どちらを書くかは部品が持つ (B8)。保存先の DataComponent は mod 健有なのでここ。
+        boolean toPos1 = com.manta.api.tool.RangeSelection.slotForClick(
+                com.manta.api.tool.RangeSelection.Edit.of(getEditMode(stack)),
+                stack.get(ModDataComponents.RANGE_POS1.get()) != null)
+                == com.manta.api.tool.RangeSelection.Slot.POS1;
+        stack.set(toPos1 ? ModDataComponents.RANGE_POS1.get() : ModDataComponents.RANGE_POS2.get(), pos);
+        player.displayClientMessage(
+                Component.translatable(toPos1
+                                ? "message.advancedschematicannon.pos1_set"
+                                : "message.advancedschematicannon.pos2_set",
+                        pos.getX(), pos.getY(), pos.getZ())
+                        .withStyle(ChatFormatting.GREEN), true);
     }
 
     public static int getEditMode(ItemStack stack) {

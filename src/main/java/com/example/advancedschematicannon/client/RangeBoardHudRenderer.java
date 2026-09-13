@@ -13,7 +13,6 @@ import com.example.advancedschematicannon.network.RangeBoardEditPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -97,7 +96,7 @@ public class RangeBoardHudRenderer {
 
         // R2.3.3: 条件分岐で skip せず毎フレーム update する (state machine が壊れる)。
         BAR_ANIM.update(held);
-        ALT_ANIM.update(held && Screen.hasAltDown());
+        ALT_ANIM.update(held && com.manta.api.hud.ModifierKeys.alt(mc.getWindow().getWindow()));
 
         if (!BAR_ANIM.shouldRender()) return;   // R2.3.4
 
@@ -197,10 +196,12 @@ public class RangeBoardHudRenderer {
         ItemStack stack = RangeBoardItem.findHeldRangeBoard(mc.player);
         if (stack.isEmpty()) return;
 
-        boolean altHeld = Screen.hasAltDown();
-        boolean shiftHeld = Screen.hasShiftDown();
+        // R3.3.1 を部品側で適用する (旧実装は Screen.hasAltDown() を直読みしていた)。
+        com.manta.api.hud.WheelInput.Mods mods = com.manta.api.hud.WheelInput.mods(mc.getWindow().getWindow());
+        boolean altHeld = mods.alt();
+        boolean shiftHeld = mods.shift();
         double delta = event.getScrollDeltaY();
-        if (delta == 0) return;
+        if (com.manta.api.hud.WheelInput.isDead(delta)) return;
         if (!altHeld && !(shiftHeld && currentMode == 1)) return;
 
         // R3.4.1 / R3.4.2: cooldown 内のホイールも消費して、バニラのホットバー切替を出さない。
@@ -209,7 +210,7 @@ public class RangeBoardHudRenderer {
             return;
         }
 
-        int dir = delta > 0 ? -1 : 1;
+        int dir = -com.manta.api.hud.WheelInput.direction(delta);
         // R3.3.1: alt > ctrl > shift。alt (= tool mode 循環) が最優先。
         if (altHeld) {
             currentMode = ((currentMode + dir) % MODE_COUNT + MODE_COUNT) % MODE_COUNT;
@@ -231,7 +232,7 @@ public class RangeBoardHudRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.screen != null) return;
         if (!event.isAttack()) return;
-        if (!Screen.hasShiftDown()) return;
+        if (!com.manta.api.hud.ModifierKeys.shift(mc.getWindow().getWindow())) return;
 
         ItemStack stack = RangeBoardItem.findHeldRangeBoard(mc.player);
         if (stack.isEmpty()) return;

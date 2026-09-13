@@ -363,11 +363,11 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
     public Integer getDynamicNumber(String[] classes, String key, int defaultValue) {
         switch (key) {
             case "asc-progress-fill":
-                return Math.round(PROGRESS_INNER_W * clamp01(menu.getProgress()));
+                return com.manta.api.render.Gauge.fillWidth(PROGRESS_INNER_W, menu.getProgress());
             case "asc-fe-fill": {
                 int max = menu.getMaxEnergy();
                 if (max <= 0) return 0;
-                return Math.round(FE_INNER_W * clamp01((float) menu.getEnergy() / max));
+                return com.manta.api.render.Gauge.fillWidth(FE_INNER_W, (float) menu.getEnergy() / max);
             }
             case "asc-block-thumb-h":
                 return blockThumbH();
@@ -890,10 +890,6 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         int count = blockEntries().size();
         if (count == 0) return 0;
         return ((count + GRID_COLS - 1) / GRID_COLS) * CELL;
-    }
-
-    private static float clamp01(float v) {
-        return v < 0 ? 0 : (v > 1 ? 1 : v);
     }
 
     private static ItemStack itemFromRegistryName(String registryName) {

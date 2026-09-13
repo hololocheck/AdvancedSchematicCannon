@@ -7,7 +7,6 @@ import com.manta.api.hud.ScrollCooldown;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -83,16 +82,14 @@ public class WandPlacementRenderer {
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.screen != null) return;
-        if (!Screen.hasShiftDown()) return;
+        // R3.3.1 を部品側で適用するので、Alt を一緒に押している間は反応しなくなる。
+        if (!com.manta.api.hud.WheelInput.mods(mc.getWindow().getWindow()).shift()) return;
 
         double delta = event.getScrollDeltaY();
-        if (delta == 0) return;
+        if (com.manta.api.hud.WheelInput.isDead(delta)) return;
 
-        ItemStack stack = mc.player.getMainHandItem();
-        if (!stack.is(ModRegistry.AIR_PLACEMENT_WAND.get())) {
-            stack = mc.player.getOffhandItem();
-            if (!stack.is(ModRegistry.AIR_PLACEMENT_WAND.get())) return;
-        }
+        ItemStack stack = com.manta.api.hud.HeldTools.find(mc.player, ModRegistry.AIR_PLACEMENT_WAND.get());
+        if (stack.isEmpty()) return;
 
         // R3.4.2: cooldown 内のホイールも消費する (バニラのホットバー切替を出さない)。
         if (!SCROLL.tryAccept()) {
@@ -101,7 +98,7 @@ public class WandPlacementRenderer {
         }
 
         int current = AirPlacementWandItem.getDistance(stack);
-        int newDist = current + (delta > 0 ? 1 : -1);
+        int newDist = current + com.manta.api.hud.WheelInput.direction(delta);
         newDist = Math.max(AirPlacementWandItem.MIN_DISTANCE, Math.min(newDist, AirPlacementWandItem.MAX_DISTANCE));
 
         if (newDist != current) {
@@ -120,13 +117,10 @@ public class WandPlacementRenderer {
         if (mc.player == null || mc.screen != null) return;
         // ミドルクリック(ボタン2) + Shift
         if (event.getButton() != 2 || event.getAction() != 1) return;
-        if (!Screen.hasShiftDown()) return;
+        if (!com.manta.api.hud.ModifierKeys.shift(mc.getWindow().getWindow())) return;
 
-        ItemStack stack = mc.player.getMainHandItem();
-        if (!stack.is(ModRegistry.AIR_PLACEMENT_WAND.get())) {
-            stack = mc.player.getOffhandItem();
-            if (!stack.is(ModRegistry.AIR_PLACEMENT_WAND.get())) return;
-        }
+        ItemStack stack = com.manta.api.hud.HeldTools.find(mc.player, ModRegistry.AIR_PLACEMENT_WAND.get());
+        if (stack.isEmpty()) return;
 
         int current = AirPlacementWandItem.getDistance(stack);
         if (current != AirPlacementWandItem.DEFAULT_DISTANCE) {
