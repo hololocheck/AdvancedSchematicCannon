@@ -389,10 +389,10 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
     }
 
     private int blockThumbH() {
-        int content = blockListContentHeight();
-        if (content <= 0) return SCROLL_TRACK_INNER_H;
-        int h = SCROLL_TRACK_INNER_H * (GRID_ROWS * CELL) / content;
-        return Math.max(12, Math.min(SCROLL_TRACK_INNER_H, h));
+        // ピクセル単位の thumb 高さ。 式は `ScrollViewport.thumbH` が持つ
+        // (見えている高さ = GRID_ROWS * CELL、 中身の高さ = content)。
+        return com.manta.api.controller.ScrollViewport.thumbH(
+                SCROLL_TRACK_INNER_H, 12, GRID_ROWS * CELL, blockListContentHeight());
     }
 
     // ================================================================= dynamic colors
