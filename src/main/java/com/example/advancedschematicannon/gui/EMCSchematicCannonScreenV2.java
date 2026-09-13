@@ -702,7 +702,7 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
                             : "gui.advancedschematicannon.emc_placed")
                     .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
         }
-        g.renderTooltip(font, tooltip, java.util.Optional.empty(), mouseX, mouseY);
+        com.manta.api.render.ItemDraw.tooltip(g, font, tooltip, mouseX, mouseY);
     }
 
     // ================================================================= overlay (info)
