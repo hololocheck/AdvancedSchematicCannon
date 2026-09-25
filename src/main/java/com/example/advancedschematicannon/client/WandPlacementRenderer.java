@@ -22,8 +22,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
-import com.example.advancedschematicannon.network.WandDistancePacket;
 
 /**
  * 空中設置杖を持っている時、設置先ブロック位置に枠を表示する。
@@ -103,7 +101,7 @@ public class WandPlacementRenderer {
 
         if (newDist != current) {
             AirPlacementWandItem.setDistance(stack, newDist);
-            PacketDistributor.sendToServer(new WandDistancePacket(newDist));
+            ToolsClient.send("wand-distance", newDist);
             mc.player.displayClientMessage(
                     Component.translatable("message.advancedschematicannon.wand_distance", newDist)
                             .withStyle(ChatFormatting.GOLD), true);
@@ -125,7 +123,7 @@ public class WandPlacementRenderer {
         int current = AirPlacementWandItem.getDistance(stack);
         if (current != AirPlacementWandItem.DEFAULT_DISTANCE) {
             AirPlacementWandItem.setDistance(stack, AirPlacementWandItem.DEFAULT_DISTANCE);
-            PacketDistributor.sendToServer(new WandDistancePacket(AirPlacementWandItem.DEFAULT_DISTANCE));
+            ToolsClient.send("wand-distance", AirPlacementWandItem.DEFAULT_DISTANCE);
             mc.player.displayClientMessage(
                     Component.translatable("message.advancedschematicannon.wand_distance_reset", AirPlacementWandItem.DEFAULT_DISTANCE)
                             .withStyle(ChatFormatting.GOLD), true);

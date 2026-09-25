@@ -128,7 +128,7 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
      * false = 所有者と op のみ (赤)。既定は公開 — 既存ワールドの砲は
      * この値を持たないので、読み込み時に true になり従来どおり動く。
      *
-     * <p>判定の実体は {@code CannonSettingsPacket.handle} の所有者チェック。
+     * <p>判定の実体は {@code network.CannonData} の所有者チェック（manta:data の action、C4）。
      * 表示だけのフラグにはしない。
      */
     private boolean publicAccess = true;
@@ -240,11 +240,21 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
         }
     }
 
+    /** This cannon's host on manta:data (MANTA_7_CONCEPT C4): server only, opened on load, closed with the cannon. */
+    private com.manta.api.data.Host dataHost;
+
     @Override
     public void onLoad() {
         super.onLoad();
+        // Not for an entity already removed: NeoForge runs onLoad on the next tick even for one removed since, and
+        // its setRemoved has come and gone - a host opened now is never closed (the next cannon here throws opening
+        // its own, second reading 13), and a grid node made now stays in the AE2 grid.
+        if (isRemoved()) return;
         if (ae2Available && level != null && !level.isClientSide()) {
             tryInitAe2GridNode();
+        }
+        if (dataHost == null && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            dataHost = com.example.advancedschematicannon.network.CannonData.open(this, serverLevel);
         }
     }
 
@@ -271,6 +281,10 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
     @Override
     public void setRemoved() {
         super.setRemoved();
+        if (dataHost != null) {
+            dataHost.close();
+            dataHost = null;
+        }
         if (ae2GridNodeManager != null) {
             try {
                 ((com.example.advancedschematicannon.integration.AE2GridNodeManager) ae2GridNodeManager).destroy();

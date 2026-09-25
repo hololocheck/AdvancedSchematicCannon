@@ -1,0 +1,29 @@
+{
+  "tag": "div",
+  "state": {
+    "actions": {
+      "range-board-edit": {
+        "params": {
+          "mode": {
+            "type": "int",
+            "min": 0,
+            "max": 2
+          }
+        },
+        "permission": "any",
+        "ratePerSecond": 20
+      },
+      "wand-distance": {
+        "params": {
+          "distance": {
+            "type": "int",
+            "min": 1,
+            "max": 15
+          }
+        },
+        "permission": "any",
+        "ratePerSecond": 40
+      }
+    }
+  }
+}

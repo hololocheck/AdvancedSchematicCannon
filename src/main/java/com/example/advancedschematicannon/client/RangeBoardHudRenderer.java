@@ -9,7 +9,6 @@ import com.manta.api.hud.ScrollCooldown;
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
 import com.example.advancedschematicannon.item.ModDataComponents;
 import com.example.advancedschematicannon.item.RangeBoardItem;
-import com.example.advancedschematicannon.network.RangeBoardEditPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,7 +21,6 @@ import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * 範囲指定ボードの HUD (MantaUI)。
@@ -251,6 +249,6 @@ public class RangeBoardHudRenderer {
         } else {
             stack.set(ModDataComponents.RANGE_EDIT_MODE.get(), mode);
         }
-        PacketDistributor.sendToServer(new RangeBoardEditPacket(mode));
+        ToolsClient.send("range-board-edit", mode);
     }
 }

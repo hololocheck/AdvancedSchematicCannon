@@ -8,14 +8,20 @@ import com.manta.api.controller.ToggleSwitchController;
 import com.manta.api.hud.HintRegistry;
 import com.manta.api.hud.HintToggleHelper;
 import com.manta.api.screen.JsonLayoutScreen;
+import com.manta.api.screen.PageLayer;
+import com.manta.api.state.BoolSlot;
+import com.manta.api.state.ColorSlot;
+import com.manta.api.state.IconSlot;
+import com.manta.api.state.MantaState;
+import com.manta.api.state.NumberSlot;
+import com.manta.api.state.TextSlot;
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
 import com.example.advancedschematicannon.block.EMCSchematicCannonBlockEntity;
 import com.example.advancedschematicannon.block.EMCSchematicCannonBlockEntity.FillerModule;
 import com.example.advancedschematicannon.block.EMCSchematicCannonBlockEntity.ReplaceMode;
 import com.example.advancedschematicannon.block.EMCSchematicCannonBlockEntity.StorageMode;
 import com.example.advancedschematicannon.integration.ProjectEBridge;
-import com.example.advancedschematicannon.network.CannonActionPacket;
-import com.example.advancedschematicannon.network.CannonSettingsPacket;
+import com.example.advancedschematicannon.network.CannonData;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -26,7 +32,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -55,6 +60,12 @@ import java.util.Map;
  */
 @OnlyIn(Dist.CLIENT)
 public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCannonMenu> {
+
+    /** Every value on this screen's pages is pushed (MANTA_7_CONCEPT §4.2): a page asks it nothing. */
+    @Override
+    protected boolean pushOnly() {
+        return true;
+    }
 
     private static final String LAYOUT = "layouts/emc-schematic-cannon.json";
 
@@ -102,6 +113,32 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
     /** 直近フレームの一覧描画範囲。tooltip の hit-test を描画と同じ幾何で行うため。 */
     private TileGrid blockGrid;
     private int blockGridX, blockGridY;
+
+    // ===== Manta 7 push (Phase 4, consumer slices 1 to 4, 2026-09-23) =====
+    // Every value of both pages is WRITTEN here, once per tick and on every local change, instead
+    // of being asked for on every frame: the screen overrides no getDynamic* at all. A text slot is
+    // named by the node's textKey since Manta 7 Phase 3 - `asc-mode-label`, not the node's class -
+    // and an icon's by its iconKey since Phase 4 slice 4, so the handle names below are the keys
+    // of emc-schematic-cannon.json; a dynamic box is a NUMBER slot named by its dynamicX/Y/W/H
+    // since Phase 4 slice 3. The hint toggle (its colours and its knob's x), the entrance
+    // animations and the toggle transitions are the framework's: the base screen pushes them
+    // (FrameworkState, slice 4). The screen declares its text keyed (textByKeyOnly), so Manta 6
+    // stops asking every class-only node for text each frame. Handles are taken in pageOpened,
+    // so the first frame already carries the push.
+    private MantaState pushed;
+    private ColorSlot pOwnerBorder, pStatusColor, pPlay, pPause, pStop,
+            pReuseTrack, pReuseKnob, pPreviewTrack, pPreviewKnob, pEmcTrack, pEmcKnob;
+    private IconSlot iStorage, iMode, iModeOpt;
+    private BoolSlot pFuelVisible, pOwnerFaceEmpty, pBlockListVisible, pBlockScrollbarVisible;
+    private TextSlot tTitle, tMaterials, tStatus, tProgress, tRemaining, tMissing,
+            tFeLabel, tEmcLabel, tSpeed, tStorage, tModeLabel, tModeSummary;
+    private NumberSlot nProgressFill, nFeFill, nThumbH, nThumbY, nReuseKnobX, nPreviewKnobX, nEmcKnobX;
+    /** The knobs' and the thumb's declared positions, read off the layout once: what the pull was handed as its default. */
+    private int reuseKnobX0, previewKnobX0, emcKnobX0, thumbY0;
+    private MantaState pushedOverlay;
+    private ColorSlot oDontReplace, oReplaceSolid, oReplaceAny, oReplaceEmpty,
+            oFill, oErase, oRemove, oWall, oTower, oBox, oCircleWall;
+    private BoolSlot oSchematicMode, oFillerMode;
 
     public EMCSchematicCannonScreenV2(EMCSchematicCannonMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -211,74 +248,70 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
 
     // ================================================================= dynamic text
 
-    @Override
-    public String getDynamicText(String[] classes, String defaultText) {
-        for (String c : classes) {
-            switch (c) {
-                case "asc-title":
-                    return this.title.getString();
-                case "asc-materials-label":
-                    return Component.translatable(fillerMode && !isRemovalMode()
-                            ? "gui.advancedschematicannon.filler.item_slot"
-                            : "gui.advancedschematicannon.block_list").getString();
-                case "asc-status":
-                    return Component.translatable(statusKey()).getString();
-                case "asc-progress-text": {
-                    int total = menu.getTotalBlocks();
-                    if (total <= 0) return "";
-                    return String.format("%d/%d (%.0f%%)",
-                            menu.getPlacedBlocks(), total, menu.getProgress() * 100);
-                }
-                case "asc-remaining": {
-                    int remaining = menu.getTotalBlocks() - menu.getPlacedBlocks();
-                    if (remaining <= 0) return "";
-                    return Component.translatable(
-                            "gui.advancedschematicannon.remaining", remaining).getString();
-                }
-                case "asc-missing": {
-                    String missing = missingBlockName();
-                    if (missing == null) return "";
-                    return Component.translatable("gui.advancedschematicannon.missing")
-                            .getString() + " " + missing;
-                }
-                case "asc-fe-label":
-                    return formatNumber(menu.getEnergy()) + " / "
-                            + formatNumber(menu.getMaxEnergy()) + " FE";
-                case "asc-emc-label":
-                    return menu.supportsEmc() ? "EMC: " + formatNumber(menu.getPlayerEmc()) : "";
-                case "asc-speed-val":
-                    return String.valueOf(blocksPerTick());
-                case "asc-storage-val":
-                    return Component.translatable(storageKey()).getString();
-                case "asc-mode-btn-label":
-                    // ここは「どちらのモードか」だけを出す。細目 (置換モード / モジュール) は
-                    // ステータス枠の asc-mode-summary 側に出す。
-                    return Component.translatable(fillerMode
-                            ? "gui.advancedschematicannon.mode.filler"
-                            : "gui.advancedschematicannon.mode.schematic").getString();
-                case "asc-mode-summary":
-                    // モード名だけ。細目はモードボタン右側の icon が示す。
-                    return Component.translatable(fillerMode
-                            ? "gui.advancedschematicannon.mode.filler"
-                            : "gui.advancedschematicannon.mode.schematic").getString();
-                // iconKey も getDynamicText 経由で解決される (SvgRenderNode)
-                case "asc-mode-btn-glyph":
-                    return fillerMode ? "manta:layout-grid" : "manta:file-text";
-                case "asc-mode-btn-opt":
-                    // strip から選んだ細目の icon。strip 側の icon と同じものを返す。
-                    return fillerMode ? fillerModuleIcon() : replaceModeIcon();
-                // iconKey は SvgRenderNode が getDynamicText(classes, "") で解決する
-                case "asc-storage-icon":
-                    return switch (storageMode) {
-                        case AE_AND_CHEST -> "manta:layers";
-                        case AE_ONLY -> "manta:database";
-                        case CHEST_ONLY -> "manta:archive";
-                    };
-                default:
-                    break;
-            }
-        }
-        return null;
+    // getDynamicText: gone. The twelve text slots and the three icons are pushed - see pushAll();
+    // the expressions moved into the helpers below unchanged.
+
+    /** The mode button's glyph: which of the two modes is on. */
+    private String modeIcon() {
+        return fillerMode ? "manta:layout-grid" : "manta:file-text";
+    }
+
+    /** The detail chosen in the strip, beside the mode button: the same icon the strip shows. */
+    private String modeOptIcon() {
+        return fillerMode ? fillerModuleIcon() : replaceModeIcon();
+    }
+
+    private String storageIcon() {
+        return switch (storageMode) {
+            case AE_AND_CHEST -> "manta:layers";
+            case AE_ONLY -> "manta:database";
+            case CHEST_ONLY -> "manta:archive";
+        };
+    }
+
+    // ----- the pushed texts, from the same expressions the pull answered with -----
+
+    private String materialsLabel() {
+        return Component.translatable(fillerMode && !isRemovalMode()
+                ? "gui.advancedschematicannon.filler.item_slot"
+                : "gui.advancedschematicannon.block_list").getString();
+    }
+
+    private String progressText() {
+        int total = menu.getTotalBlocks();
+        if (total <= 0) return "";
+        return String.format("%d/%d (%.0f%%)",
+                menu.getPlacedBlocks(), total, menu.getProgress() * 100);
+    }
+
+    private String remainingText() {
+        int remaining = menu.getTotalBlocks() - menu.getPlacedBlocks();
+        if (remaining <= 0) return "";
+        return Component.translatable(
+                "gui.advancedschematicannon.remaining", remaining).getString();
+    }
+
+    private String missingText() {
+        String missing = missingBlockName();
+        if (missing == null) return "";
+        return Component.translatable("gui.advancedschematicannon.missing")
+                .getString() + " " + missing;
+    }
+
+    private String feLabel() {
+        return formatNumber(menu.getEnergy()) + " / "
+                + formatNumber(menu.getMaxEnergy()) + " FE";
+    }
+
+    private String emcLabel() {
+        return menu.supportsEmc() ? "EMC: " + formatNumber(menu.getPlayerEmc()) : "";
+    }
+
+    /** モード名だけ。細目 (置換モード / モジュール) はモードボタン右側の icon と asc-mode-summary が示す。 */
+    private String modeName() {
+        return Component.translatable(fillerMode
+                ? "gui.advancedschematicannon.mode.filler"
+                : "gui.advancedschematicannon.mode.schematic").getString();
     }
 
     private String statusKey() {
@@ -359,34 +392,10 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
 
     // ================================================================= dynamic numbers
 
-    @Override
-    public Integer getDynamicNumber(String[] classes, String key, int defaultValue) {
-        switch (key) {
-            case "asc-progress-fill":
-                return com.manta.api.render.Gauge.fillWidth(PROGRESS_INNER_W, menu.getProgress());
-            case "asc-fe-fill": {
-                int max = menu.getMaxEnergy();
-                if (max <= 0) return 0;
-                return com.manta.api.render.Gauge.fillWidth(FE_INNER_W, (float) menu.getEnergy() / max);
-            }
-            case "asc-block-thumb-h":
-                return blockThumbH();
-            case "asc-block-thumb-y":
-                return blockScroll.thumbY(defaultValue, SCROLL_TRACK_INNER_H, blockThumbH());
-            case "asc-skip-missing-knob-x":
-                return skipMissingToggle.knobX(defaultValue);
-            case "asc-protect-be-knob-x":
-                return protectBeToggle.knobX(defaultValue);
-            case "asc-reuse-knob-x":
-                return reuseToggle.knobX(defaultValue);
-            case "asc-preview-knob-x":
-                return previewToggle.knobX(defaultValue);
-            case "asc-emc-knob-x":
-                return emcToggle.knobX(defaultValue);
-            default:
-                return HintToggleHelper.resolveNumber(key, defaultValue);
-        }
-    }
+    // getDynamicNumber: gone. The seven dynamic boxes of the main page (the two fills, the
+    // thumb's y and h, the three knobs' x) are pushed - see pushAll(); the hint toggle's knob is
+    // pushed by the base screen (FrameworkState). The skip-missing and protect-be knobs this used
+    // to answer are declared by no layout of this mod, so nothing asked for them.
 
     private int blockThumbH() {
         // ピクセル単位の thumb 高さ。 式は `ScrollViewport.thumbH` が持つ
@@ -401,83 +410,206 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
     private static final int OFF = 0xFF888888;     // 非選択
     private static final int DISABLED = 0xFF555555;
 
-    @Override
-    public Integer getDynamicColor(String[] classes, String key, int defaultArgb) {
-        switch (key) {
-            case "asc-owner-border":
-                // 緑 = 公開 / 赤 = 非公開 (TSU と同じ意味)。
-                return publicAccess ? 0xFF66BB6A : 0xFFEF5350;
-            case "asc-status-color":
-                return switch (menu.getCannonState()) {
-                    case IDLE -> 0xFFAAAAAA;
-                    case RUNNING -> 0xFF66BB6A;
-                    case PAUSED -> 0xFFFFD54F;
-                    case FINISHED -> 0xFF66BB6A;
-                    case ERROR -> 0xFFEF5350;
-                };
-            case "asc-mode-schematic-color": return sel(!fillerMode);
-            case "asc-mode-filler-color":    return sel(fillerMode);
-
-            case "asc-play-color":  return canPlay() ? ON : DISABLED;
-            case "asc-pause-color": return canPause() ? 0xFFFFD54F : DISABLED;
-            case "asc-stop-color":  return canStop() ? 0xFFEF5350 : DISABLED;
-
-            case "asc-dont-replace-color":  return sel(replaceMode == ReplaceMode.DONT_REPLACE);
-            case "asc-replace-solid-color": return sel(replaceMode == ReplaceMode.REPLACE_SOLID);
-            case "asc-replace-any-color":   return sel(replaceMode == ReplaceMode.REPLACE_ANY);
-            case "asc-replace-empty-color": return sel(replaceMode == ReplaceMode.REPLACE_EMPTY);
-
-            case "asc-filler-fill-color":        return sel(fillerModule == FillerModule.FILL);
-            case "asc-filler-erase-color":       return sel(fillerModule == FillerModule.ERASE);
-            case "asc-filler-remove-color":      return sel(fillerModule == FillerModule.REMOVE);
-            case "asc-filler-wall-color":        return sel(fillerModule == FillerModule.WALL);
-            case "asc-filler-tower-color":       return sel(fillerModule == FillerModule.TOWER);
-            case "asc-filler-box-color":         return sel(fillerModule == FillerModule.BOX);
-            case "asc-filler-circle-wall-color": return sel(fillerModule == FillerModule.CIRCLE_WALL);
-
-            case "asc-skip-missing-toggle-bg": return skipMissingToggle.trackBg();
-            case "asc-skip-missing-knob-bg":   return skipMissingToggle.knobBg();
-            case "asc-protect-be-toggle-bg":   return protectBeToggle.trackBg();
-            case "asc-protect-be-knob-bg":     return protectBeToggle.knobBg();
-            case "asc-reuse-toggle-bg":        return reuseToggle.trackBg();
-            case "asc-reuse-knob-bg":          return reuseToggle.knobBg();
-            case "asc-preview-toggle-bg":      return previewToggle.trackBg();
-            case "asc-preview-knob-bg":        return previewToggle.knobBg();
-            case "asc-emc-toggle-bg":          return emcToggle.trackBg();
-            case "asc-emc-knob-bg":            return emcToggle.knobBg();
-            default:
-                return HintToggleHelper.resolveColor(key);
-        }
-    }
+    // getDynamicColor: gone. Every colour key of both layouts is pushed - see pushAll() /
+    // pushOverlay(); the hint toggle's two colours by the base screen (FrameworkState).
 
     private static int sel(boolean active) { return active ? ON : OFF; }
 
+    private int statusColor() {
+        return switch (menu.getCannonState()) {
+            case IDLE -> 0xFFAAAAAA;
+            case RUNNING -> 0xFF66BB6A;
+            case PAUSED -> 0xFFFFD54F;
+            case FINISHED -> 0xFF66BB6A;
+            case ERROR -> 0xFFEF5350;
+        };
+    }
+
+    // ================================================================= push (Manta 7)
+
+    /**
+     * The page has just opened: take the handles of ITS slots (a name the layout does not declare
+     * is refused here, not answered with a default) and push once, so the first frame carries the
+     * values. The option strip is a new page every time it opens.
+     */
+    @Override
+    protected void pageOpened(Object page, PageLayer layer) {
+        if (layer == PageLayer.PRIMARY) {
+            pushed = MantaState.of(page);
+            pOwnerBorder = pushed.color("asc-owner-border");
+            pStatusColor = pushed.color("asc-status-color");
+            pPlay = pushed.color("asc-play-color");
+            pPause = pushed.color("asc-pause-color");
+            pStop = pushed.color("asc-stop-color");
+            pReuseTrack = pushed.color("asc-reuse-toggle-bg");
+            pReuseKnob = pushed.color("asc-reuse-knob-bg");
+            pPreviewTrack = pushed.color("asc-preview-toggle-bg");
+            pPreviewKnob = pushed.color("asc-preview-knob-bg");
+            pEmcTrack = pushed.color("asc-emc-toggle-bg");
+            pEmcKnob = pushed.color("asc-emc-knob-bg");
+            iStorage = pushed.icon("asc-storage-icon");
+            iMode = pushed.icon("asc-mode-icon");
+            iModeOpt = pushed.icon("asc-mode-opt-icon");
+            pFuelVisible = pushed.bool("asc-fuel-visible");
+            pOwnerFaceEmpty = pushed.bool("asc-owner-face-empty");
+            pBlockListVisible = pushed.bool("asc-block-list-visible");
+            pBlockScrollbarVisible = pushed.bool("asc-block-scrollbar-visible");
+            tTitle = pushed.text("asc-title");
+            tMaterials = pushed.text("asc-materials-label");
+            tStatus = pushed.text("asc-status");
+            tProgress = pushed.text("asc-progress-text");
+            tRemaining = pushed.text("asc-remaining");
+            tMissing = pushed.text("asc-missing");
+            tFeLabel = pushed.text("asc-fe-label");
+            tEmcLabel = pushed.text("asc-emc-label");
+            tSpeed = pushed.text("asc-speed-val");
+            tStorage = pushed.text("asc-storage-val");
+            tModeLabel = pushed.text("asc-mode-label");
+            tModeSummary = pushed.text("asc-mode-summary");
+            nProgressFill = pushed.number("asc-progress-fill");
+            nFeFill = pushed.number("asc-fe-fill");
+            nThumbH = pushed.number("asc-block-thumb-h");
+            nThumbY = pushed.number("asc-block-thumb-y");
+            nReuseKnobX = pushed.number("asc-reuse-knob-x");
+            nPreviewKnobX = pushed.number("asc-preview-knob-x");
+            nEmcKnobX = pushed.number("asc-emc-knob-x");
+            reuseKnobX0 = declared("asc-reuse-toggle-knob", "x");
+            previewKnobX0 = declared("asc-preview-toggle-knob", "x");
+            emcKnobX0 = declared("asc-emc-toggle-knob", "x");
+            thumbY0 = declared("asc-block-scrollbar-thumb", "y");
+            pushed.textByKeyOnly();
+            pushAll();
+        } else if (layer == PageLayer.OVERLAY) {
+            pushedOverlay = MantaState.of(page);
+            oDontReplace = pushedOverlay.color("asc-dont-replace-color");
+            oReplaceSolid = pushedOverlay.color("asc-replace-solid-color");
+            oReplaceAny = pushedOverlay.color("asc-replace-any-color");
+            oReplaceEmpty = pushedOverlay.color("asc-replace-empty-color");
+            oFill = pushedOverlay.color("asc-filler-fill-color");
+            oErase = pushedOverlay.color("asc-filler-erase-color");
+            oRemove = pushedOverlay.color("asc-filler-remove-color");
+            oWall = pushedOverlay.color("asc-filler-wall-color");
+            oTower = pushedOverlay.color("asc-filler-tower-color");
+            oBox = pushedOverlay.color("asc-filler-box-color");
+            oCircleWall = pushedOverlay.color("asc-filler-circle-wall-color");
+            oSchematicMode = pushedOverlay.bool("asc-schematic-mode");
+            oFillerMode = pushedOverlay.bool("asc-filler-mode");
+            pushOverlay();
+        }
+    }
+
     // ================================================================= dynamic bools
 
-    @Override
-    public Boolean getDynamicBool(String[] classes, String key, boolean defaultValue) {
-        return switch (key) {
-            case "asc-schematic-mode" -> !fillerMode;
-            case "asc-filler-mode" -> fillerMode;
-            case "asc-fuel-visible" -> menu.supportsEmc();
-            // 所有者が居ないときだけ空状態の icon を出す。顔が描かれるときは重ねない。
-            case "asc-owner-face-empty" -> ownerUuid() == null;
-            // 撤去モードは「範囲内にあるブロック」を一覧表示するので概略図モードと同じ扱い。
-            //
-            // 材料スロットの枠自体は両モードで出したままにする (2026-08-02 のユーザー指示):
-            // 概略図モードでは同じ枠の上にこの canvas が要求素材を描く。枠が消えないので
-            // モードを跨いでもグリッドの見え方が変わらない。
-            case "asc-block-list-visible" -> !fillerMode || isRemovalMode();
-            case "asc-block-scrollbar-visible" -> (!fillerMode || isRemovalMode())
-                    && blockScroll.needsScrollbar();
-            default -> null;
-        };
+    // getDynamicBool: gone. The four visibleKeys of the main page and the two of the option
+    // strip are pushed - see pushAll() / pushOverlay().
+
+    /** Every pushed value of the main page, from the same expressions the pull answered with. An unchanged value costs nothing. */
+    private void pushAll() {
+        if (pushed != null && pushed.isOpen()) {
+            pushed.set(pOwnerBorder, publicAccess ? 0xFF66BB6A : 0xFFEF5350);
+            pushed.set(pStatusColor, statusColor());
+            pushed.set(pPlay, canPlay() ? ON : DISABLED);
+            pushed.set(pPause, canPause() ? 0xFFFFD54F : DISABLED);
+            pushed.set(pStop, canStop() ? 0xFFEF5350 : DISABLED);
+            pushed.set(pReuseTrack, reuseToggle.trackBg());
+            pushed.set(pReuseKnob, reuseToggle.knobBg());
+            pushed.set(pPreviewTrack, previewToggle.trackBg());
+            pushed.set(pPreviewKnob, previewToggle.knobBg());
+            pushed.set(pEmcTrack, emcToggle.trackBg());
+            pushed.set(pEmcKnob, emcToggle.knobBg());
+            pushed.set(iStorage, storageIcon());
+            pushed.set(iMode, modeIcon());
+            pushed.set(iModeOpt, modeOptIcon());
+            pushed.set(pFuelVisible, menu.supportsEmc());
+            pushed.set(pOwnerFaceEmpty, ownerUuid() == null);
+            boolean list = !fillerMode || isRemovalMode();
+            pushed.set(pBlockListVisible, list);
+            pushed.set(pBlockScrollbarVisible, list && blockScroll.needsScrollbar());
+            pushed.set(tTitle, this.title.getString());
+            pushed.set(tMaterials, materialsLabel());
+            pushed.set(tStatus, Component.translatable(statusKey()).getString());
+            pushed.set(tProgress, progressText());
+            pushed.set(tRemaining, remainingText());
+            pushed.set(tMissing, missingText());
+            pushed.set(tFeLabel, feLabel());
+            pushed.set(tEmcLabel, emcLabel());
+            pushed.set(tSpeed, String.valueOf(blocksPerTick()));
+            pushed.set(tStorage, Component.translatable(storageKey()).getString());
+            pushed.set(tModeLabel, modeName());
+            pushed.set(tModeSummary, modeName());
+            pushed.set(nProgressFill, com.manta.api.render.Gauge.fillWidth(PROGRESS_INNER_W, menu.getProgress()));
+            int maxEnergy = menu.getMaxEnergy();
+            pushed.set(nFeFill, maxEnergy <= 0 ? 0
+                    : com.manta.api.render.Gauge.fillWidth(FE_INNER_W, (float) menu.getEnergy() / maxEnergy));
+            pushed.set(nThumbH, blockThumbH());
+            pushed.set(nThumbY, blockScroll.thumbY(thumbY0, SCROLL_TRACK_INNER_H, blockThumbH()));
+            pushed.set(nReuseKnobX, reuseToggle.knobX(reuseKnobX0));
+            pushed.set(nPreviewKnobX, previewToggle.knobX(previewKnobX0));
+            pushed.set(nEmcKnobX, emcToggle.knobX(emcKnobX0));
+        }
+        pushOverlay();
+    }
+
+    /**
+     * The integer {@code property} the layout declares on the first node carrying {@code className}
+     * - the static value the pull used to be handed as its default, read off the same document
+     * rather than copied into this file.
+     */
+    private int declared(String className, String property) {
+        com.google.gson.JsonObject root = JsonLayoutScreen.layoutOf(this);
+        java.util.ArrayDeque<com.google.gson.JsonObject> queue = new java.util.ArrayDeque<>();
+        if (root != null) queue.add(root);
+        while (!queue.isEmpty()) {
+            com.google.gson.JsonObject node = queue.poll();
+            com.google.gson.JsonElement classes = node.get("classes");
+            if (classes != null && classes.isJsonArray()) {
+                for (com.google.gson.JsonElement c : classes.getAsJsonArray()) {
+                    if (c.isJsonPrimitive() && className.equals(c.getAsString())) {
+                        com.google.gson.JsonElement v = node.get(property);
+                        return v != null && v.isJsonPrimitive() && v.getAsJsonPrimitive().isNumber() ? v.getAsInt() : 0;
+                    }
+                }
+            }
+            for (String branch : new String[] {"children", "template"}) {
+                com.google.gson.JsonElement kids = node.get(branch);
+                if (kids == null) continue;
+                if (kids.isJsonArray()) {
+                    for (com.google.gson.JsonElement k : kids.getAsJsonArray()) {
+                        if (k.isJsonObject()) queue.add(k.getAsJsonObject());
+                    }
+                } else if (kids.isJsonObject()) {
+                    queue.add(kids.getAsJsonObject());
+                }
+            }
+        }
+        throw new IllegalStateException("no node carries class '" + className + "' in the cannon layout");
+    }
+
+    private void pushOverlay() {
+        if (pushedOverlay == null || !pushedOverlay.isOpen()) return;
+        pushedOverlay.set(oDontReplace, sel(replaceMode == ReplaceMode.DONT_REPLACE));
+        pushedOverlay.set(oReplaceSolid, sel(replaceMode == ReplaceMode.REPLACE_SOLID));
+        pushedOverlay.set(oReplaceAny, sel(replaceMode == ReplaceMode.REPLACE_ANY));
+        pushedOverlay.set(oReplaceEmpty, sel(replaceMode == ReplaceMode.REPLACE_EMPTY));
+        pushedOverlay.set(oFill, sel(fillerModule == FillerModule.FILL));
+        pushedOverlay.set(oErase, sel(fillerModule == FillerModule.ERASE));
+        pushedOverlay.set(oRemove, sel(fillerModule == FillerModule.REMOVE));
+        pushedOverlay.set(oWall, sel(fillerModule == FillerModule.WALL));
+        pushedOverlay.set(oTower, sel(fillerModule == FillerModule.TOWER));
+        pushedOverlay.set(oBox, sel(fillerModule == FillerModule.BOX));
+        pushedOverlay.set(oCircleWall, sel(fillerModule == FillerModule.CIRCLE_WALL));
+        pushedOverlay.set(oSchematicMode, !fillerMode);
+        pushedOverlay.set(oFillerMode, fillerMode);
     }
 
     // ================================================================= clicks
 
     @Override
     public void onElementClick(String[] classes, int mouseX, int mouseY) {
+        // A hint-toggle click never reaches this method in the client: the base hands it to the
+        // registered HintBridge first (JsonLayoutScreen.onElementClick) and returns. Its colours
+        // and its knob's x are the base screen's to push, every frame (FrameworkState), so all
+        // three move on the frame after the click.
         if (HintToggleHelper.handleClick(classes)) return;
         if (skipMissingToggle.handleClick(classes)) return;
         if (protectBeToggle.handleClick(classes)) return;
@@ -746,13 +878,14 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         if (!canPlay()) return;
         EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
         if (be == null) return;
-        CannonActionPacket.Action action = switch (menu.getCannonState()) {
-            case IDLE, FINISHED, ERROR -> CannonActionPacket.Action.START;
-            case PAUSED -> CannonActionPacket.Action.RESUME;
+        String action = switch (menu.getCannonState()) {
+            case IDLE, FINISHED, ERROR -> "START";
+            case PAUSED -> "RESUME";
             default -> null;
         };
-        if (action != null) {
-            PacketDistributor.sendToServer(new CannonActionPacket(be.getBlockPos(), action));
+        com.manta.api.data.Mirror data = data();
+        if (action != null && data != null) {
+            data.send("cannon-action", action);
         }
     }
 
@@ -760,41 +893,77 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         if (!canPause()) return;
         EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
         if (be == null) return;
-        PacketDistributor.sendToServer(
-                new CannonActionPacket(be.getBlockPos(), CannonActionPacket.Action.PAUSE));
+        com.manta.api.data.Mirror data = data();
+        if (data != null) {
+            data.send("cannon-action", "PAUSE");
+        }
     }
 
     private void onStopPressed() {
         if (!canStop()) return;
         EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
         if (be == null) return;
-        PacketDistributor.sendToServer(
-                new CannonActionPacket(be.getBlockPos(), CannonActionPacket.Action.STOP));
+        com.manta.api.data.Mirror data = data();
+        if (data != null) {
+            data.send("cannon-action", "STOP");
+        }
     }
 
     // ================================================================= server sync
+
+    /**
+     * The cannon's host on manta:data (MANTA_7_CONCEPT C4, network.CannonData): opened on the first action, closed
+     * with the screen. The screen's values still come from the block entity's sync; only the input moved.
+     */
+    private com.manta.api.data.Mirror data;
+
+    private com.manta.api.data.Mirror data() {
+        if (data == null) {
+            EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
+            if (be == null || be.getLevel() == null) return null;
+            data = com.manta.api.data.Mirror.open(CannonData.channel(be.getLevel(), be.getBlockPos()),
+                    CannonData.schema());
+        }
+        return data;
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        if (data != null) {
+            data.close();
+            data = null;
+        }
+    }
 
     private void sendAllSettings() {
         // 30 tick (1.5s): サーバー往復 + 反映時間を見込む。短すぎるとサーバー反映前に
         // containerTick が旧値で上書きし「動かしたつもりが戻る」UX バグが起きる (旧実装の実害)。
         syncCooldown = 30;
+        pushAll();
         EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
         if (be == null) return;
-        PacketDistributor.sendToServer(new CannonSettingsPacket(
-                be.getBlockPos(),
-                CannonSettingsPacket.packModes(replaceMode.ordinal(), storageMode.ordinal()),
-                skipMissing,
-                protectBlockEntities,
-                useEmc,
-                CannonSettingsPacket.packSpeedAndFlags(blocksPerTick(), reuseSchematic),
-                CannonSettingsPacket.packFillerModeAndModule(
-                        fillerMode, fillerModule.ordinal(), previewVisible, publicAccess)));
+        com.manta.api.data.Mirror data = data();
+        if (data == null) return;
+        // The params of the layout's `cannon-settings` action, in its declaration order.
+        data.send("cannon-settings", replaceMode.ordinal(), storageMode.ordinal(), skipMissing,
+                protectBlockEntities, useEmc, blocksPerTick(), reuseSchematic, fillerMode, previewVisible,
+                publicAccess, fillerModule.ordinal());
     }
 
     @Override
     protected void containerTick() {
         super.containerTick();
+        try {
+            tickSettings();
+        } finally {
+            // Once per tick, whatever the sync did: the menu's own values (state, energy, progress)
+            // move without a local change, and the pull re-read them on every frame.
+            pushAll();
+        }
+    }
 
+    private void tickSettings() {
         if (syncCooldown > 0) {
             syncCooldown--;
             return;
