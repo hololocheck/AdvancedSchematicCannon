@@ -852,6 +852,14 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         return optionStrip.close();
     }
 
+    /**
+     * Puts the screen in a named state for BelugaAOS's UI sweep ({@link AscScreenCatalogue}): "options" opens the option
+     * strip, "main" leaves it closed.
+     */
+    void wikiApplyState(String state) {
+        optionStrip.setOpen("options".equals(state));
+    }
+
     private static final String OPTIONS_LAYOUT = "layouts/emc-schematic-cannon-options.json";
 
     // ================================================================= transport
