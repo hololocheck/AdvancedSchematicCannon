@@ -107,11 +107,11 @@ class CannonOwnershipTest {
     private static final List<String> EXEMPT = List.of("void loadAdditional(", "void wikiDemo(");
 
     /**
-     * A write of the field - this cannon's, another's ({@code cannon.ownerUUID = ...}) or from an inner class
-     * ({@code EMCSchematicCannonBlockEntity.this.ownerUUID = ...}; the block entity has anonymous classes) - and not
-     * {@code ==}.
+     * A write of the field through whatever qualifier - none, {@code this.}, another cannon, an inner class's
+     * {@code EMCSchematicCannonBlockEntity.this.}, a cast or a call - and not {@code ==}. Matching the qualifier
+     * instead missed {@code X.this.} (first second reading) and then a cast or a call (second), 2026-10-07.
      */
-    private static final Pattern WRITE = Pattern.compile("(?<![\\w.])(?:\\w+\\.)*ownerUUID\\s*=(?!=)");
+    private static final Pattern WRITE = Pattern.compile("(?<!\\w)ownerUUID\\s*=(?!=)");
 
     /** src/main/java, found upwards from the working directory (a test may run from a subdirectory). */
     private static Path mainSources() {
@@ -164,6 +164,9 @@ class CannonOwnershipTest {
         assertEquals(List.of("A.this.ownerUUID = p.getUUID()"), directWrites(
                 "class A { Object h = new Object() { void f() { A.this.ownerUUID = p.getUUID(); } }; }"),
                 "a write from an inner class (second reading, 2026-10-07)");
+        assertEquals(List.of("((A) be).ownerUUID = p.getUUID()", "cannon().ownerUUID = id"), directWrites(
+                "class A { void f() { ((A) be).ownerUUID = p.getUUID(); cannon().ownerUUID = id; } }"),
+                "a write through a cast or a call");
         assertEquals(List.of(), directWrites("class A { void f() { // ownerUUID = id;\n /* ownerUUID = id; */ } }"));
         assertEquals(List.of(), directWrites(
                 "class A { void loadAdditional(CompoundTag tag) { if (tag.hasUUID(\"Owner\")) ownerUUID = tag.getUUID(\"Owner\"); } }"));
@@ -179,9 +182,13 @@ class CannonOwnershipTest {
         List<String> out = new ArrayList<>();
         Matcher m = WRITE.matcher(code);
         while (m.find()) {
-            if (code.substring(0, m.start()).stripTrailing().endsWith("UUID")) continue; // a declaration
+            // What stands before the field in its statement: a qualifier ("this.", "((A) be)."), nothing, or a type.
+            int start = 1 + Math.max(code.lastIndexOf(';', m.start()),
+                    Math.max(code.lastIndexOf('{', m.start()), code.lastIndexOf('}', m.start())));
+            String before = code.substring(start, m.start()).strip();
+            if (before.endsWith("UUID")) continue; // a declaration
             String value = code.substring(m.end(), code.indexOf(';', m.end())).trim();
-            if (!value.startsWith("CannonOwnership.")) out.add(m.group().trim() + " " + value);
+            if (!value.startsWith("CannonOwnership.")) out.add(before + "ownerUUID = " + value);
         }
         return out;
     }
