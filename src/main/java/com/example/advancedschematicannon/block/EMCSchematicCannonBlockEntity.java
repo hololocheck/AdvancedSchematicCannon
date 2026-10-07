@@ -22,6 +22,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -124,12 +126,12 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
     private UUID ownerUUID = null;
 
     /**
-     * 公開設定。true = 誰でも設定を変更できる (GUI の所有者アイコン枠が緑)、
-     * false = 所有者と op のみ (赤)。既定は公開 — 既存ワールドの砲は
+     * 公開設定。true = 誰でも開いて設定を変更できる (GUI の所有者アイコン枠が緑)、
+     * false = 所有者と op だけが開ける (赤)。既定は公開 — 既存ワールドの砲は
      * この値を持たないので、読み込み時に true になり従来どおり動く。
      *
-     * <p>判定の実体は {@code network.CannonData} の所有者チェック（manta:data の action、C4）。
-     * 表示だけのフラグにはしない。
+     * <p>判定の実体は {@link CannonOwnership#mayUse}（{@link #createMenu}・menu の {@code stillValid}・
+     * {@code network.CannonData} の host と settings が使う）。表示だけのフラグにはしない。
      */
     private boolean publicAccess = true;
 
@@ -1773,7 +1775,9 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
             }
         }
 
-        this.ownerUUID = player.getUUID();
+        // Starting does not change the owner (CannonOwnership.used) - only a cannon nobody owns goes to the starter.
+        // The job runs on the owner: their EMC, and only while they are online.
+        this.ownerUUID = CannonOwnership.used(ownerUUID, player.getUUID());
         this.state = State.RUNNING;
         this.placedBlocks = 0;
         setChanged();
@@ -2354,6 +2358,40 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
     public String getMissingBlockName() { return missingBlockName; }
     public long getTotalEmcUsed() { return totalEmcUsed; }
 
+    // ===== 所有者 (判定は CannonOwnership) =====
+
+    /**
+     * Records the player who placed this cannon as its owner, from both blocks' {@code setPlacedBy}. A fake player -
+     * Create's deployer places blocks as one - is nobody's hand, so its cannon stays unowned until a player opens it
+     * or starts a job on it.
+     */
+    public void placedBy(@Nullable LivingEntity placer) {
+        UUID player = placer instanceof ServerPlayer p && !(p instanceof FakePlayer) ? p.getUUID() : null;
+        ownerUUID = CannonOwnership.placed(ownerUUID, player);
+        setChanged();
+        syncToClient();
+    }
+
+    /** {@link CannonOwnership#actsAsOwner}: the owner, an op, or anyone while nobody owns this cannon. */
+    public boolean actsAsOwner(Player player) {
+        return CannonOwnership.actsAsOwner(ownerUUID, player.getUUID(), player.hasPermissions(2));
+    }
+
+    /** {@link CannonOwnership#mayUse}: open the screen and change the settings. */
+    public boolean mayUse(Player player) {
+        return CannonOwnership.mayUse(ownerUUID, player.getUUID(), player.hasPermissions(2), publicAccess);
+    }
+
+    /**
+     * Tells a refused player why on the action bar; {@code key} takes the owner's name as its one argument. The name
+     * comes from the server's profile cache, which every login enters; the UUID stands in if it is not there.
+     */
+    public void refuse(ServerPlayer player, String key) {
+        String owner = Optional.ofNullable(player.server.getProfileCache()).flatMap(cache -> cache.get(ownerUUID))
+                .map(profile -> profile.getName()).orElse(String.valueOf(ownerUUID));
+        player.displayClientMessage(Component.translatable(key, owner), true);
+    }
+
     // ===== セーブ/ロード =====
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
@@ -2547,17 +2585,19 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
     
     public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
         if (player instanceof ServerPlayer serverPlayer) {
-            // owner は IDLE/FINISHED/ERROR 時のみ更新。RUNNING/PAUSED 中に他人が
-            // GUI を開いて owner を奪うと、その人の EMC/燃料が引き落とされてしまう。
-            if (ownerUUID == null
-                    || state == State.IDLE
-                    || state == State.FINISHED
-                    || state == State.ERROR) {
-                this.ownerUUID = serverPlayer.getUUID();
+            // 非公開の砲は所有者と op にしか開かない (CannonOwnership.mayUse)。両ブロックの
+            // useWithoutItem はこの provider で開くので、開く経路はすべてここを通る。null は何も開かない。
+            if (!mayUse(serverPlayer)) {
+                refuse(serverPlayer, "message.advancedschematicannon.cannon_private");
+                return null;
             }
+            // 開いても所有者は変わらない (CannonOwnership.used)。所有者の無い砲だけ開いた人のものになる。
+            // 2026-10-07 までは待機中に開いた人が所有者になり、非公開が効かず、次のジョブもその人の EMC で動いていた。
+            this.ownerUUID = CannonOwnership.used(ownerUUID, serverPlayer.getUUID());
+            setChanged();
             // EMC 表示は閲覧者自身のものを表示しても害はないが、ジョブ稼働中は owner の
             // 残高を維持したいので owner==viewer のときだけ更新する。
-            if (ownerUUID != null && ownerUUID.equals(serverPlayer.getUUID())) {
+            if (ownerUUID.equals(serverPlayer.getUUID())) {
                 updateCachedEmc(serverPlayer);
             }
             syncToClient();

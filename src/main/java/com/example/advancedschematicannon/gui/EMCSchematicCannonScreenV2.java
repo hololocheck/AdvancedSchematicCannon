@@ -16,6 +16,7 @@ import com.manta.api.state.MantaState;
 import com.manta.api.state.NumberSlot;
 import com.manta.api.state.TextSlot;
 import com.example.advancedschematicannon.AdvancedSchematicCannon;
+import com.example.advancedschematicannon.block.CannonOwnership;
 import com.example.advancedschematicannon.block.EMCSchematicCannonBlockEntity;
 import com.example.advancedschematicannon.block.EMCSchematicCannonBlockEntity.FillerModule;
 import com.example.advancedschematicannon.block.EMCSchematicCannonBlockEntity.ReplaceMode;
@@ -629,7 +630,7 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
                 case "asc-owner-face-box":
                 case "asc-owner-face-fallback":
                 case "asc-owner-face-canvas":
-                    // 公開設定を変えられるのは所有者だけ (server 側も同じ判定をする)。
+                    // 公開設定を変えられるのは所有者と op だけ (server 側も同じ判定をする)。
                     // 所有者でないときも click は消費する — 背後へ落とさない (R6.0.1)。
                     if (isOwnerClient()) {
                         publicAccess = !publicAccess;
@@ -1150,11 +1151,14 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         return be == null ? null : be.getOwnerUUID();
     }
 
-    /** クライアント側の所有者判定。owner 未設定の砲は誰でも所有者扱い (server と同じ)。 */
+    /**
+     * クライアント側の所有者判定。所有者・op・所有者の無い砲なら誰でも (server と同じ
+     * {@link CannonOwnership#actsAsOwner} — op の権限レベルは server がクライアントへ送っている)。
+     */
     private boolean isOwnerClient() {
         var mc = net.minecraft.client.Minecraft.getInstance();
         if (mc.player == null) return false;
-        return ownerUuid() == null || ownerUuid().equals(mc.player.getUUID());
+        return CannonOwnership.actsAsOwner(ownerUuid(), mc.player.getUUID(), mc.player.hasPermissions(2));
     }
 
     private boolean isRemovalMode() {

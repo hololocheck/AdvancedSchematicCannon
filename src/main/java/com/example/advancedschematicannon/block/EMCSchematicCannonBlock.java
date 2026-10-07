@@ -5,7 +5,9 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -42,6 +44,15 @@ public class EMCSchematicCannonBlock extends BaseEntityBlock {
         // プレイヤーが向いている方向に砲身が向く（Createと同じ）
         return this.defaultBlockState()
                 .setValue(FACING, context.getHorizontalDirection());
+    }
+
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        // 設置した人が所有者 (CannonOwnership)。
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof EMCSchematicCannonBlockEntity cannon) {
+            cannon.placedBy(placer);
+        }
     }
 
     @Override

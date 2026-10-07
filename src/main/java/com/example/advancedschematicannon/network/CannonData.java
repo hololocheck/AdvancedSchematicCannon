@@ -11,13 +11,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * The cannon's actions on manta:data (MANTA_7_CONCEPT C4): what CannonActionPacket and CannonSettingsPacket
  * carried, declared once in the cannon layout's {@code state} member. The screen sends them through a
- * {@code Mirror}; the block entity's {@link Host} admits a player within 8 blocks of this cannon (the
- * packets' distance check, now the host's {@code canView}) and applies them with the packets' own owner rule.
+ * {@code Mirror}; the block entity's {@link Host} admits a player within 8 blocks of this cannon who may use it (the
+ * packets' distance check, now the host's {@code canView}) and applies them with the owner rules of
+ * {@link com.example.advancedschematicannon.block.CannonOwnership}.
  */
 public final class CannonData {
 
@@ -40,27 +40,27 @@ public final class CannonData {
         return MantaData.channel(AdvancedSchematicCannon.MOD_ID, "cannon", level.dimension(), pos);
     }
 
-    /** The cannon's host, on the server thread. Closed by the block entity with itself. */
+    /**
+     * The cannon's host, on the server thread. Closed by the block entity with itself. A private cannon's state and
+     * actions reach its owner and ops only, as its screen does: the host asks again on every action and every
+     * fan-out, so whoever had it open when it went private drops off.
+     */
     public static Host open(EMCSchematicCannonBlockEntity cannon, ServerLevel level) {
         BlockPos pos = cannon.getBlockPos();
         Host host = MantaData.host(level.getServer(), channel(level, pos), schema(),
                 player -> player.level() == level
                         && player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0
-                        && level.getBlockEntity(pos) == cannon);
+                        && level.getBlockEntity(pos) == cannon
+                        && cannon.mayUse(player));
         host.on("cannon-action", (args, player) -> action(cannon, player, (String) args.get(0)));
         host.on("cannon-settings", (args, player) -> settings(cannon, player, args));
         return host;
     }
 
-    /** Owner, op, or nobody owns it yet: the rule both packets applied. */
-    private static boolean isOwner(EMCSchematicCannonBlockEntity cannon, ServerPlayer player) {
-        UUID ownerId = cannon.getOwnerUUID();
-        return ownerId == null || ownerId.equals(player.getUUID()) || player.hasPermissions(2);
-    }
-
     private static void action(EMCSchematicCannonBlockEntity cannon, ServerPlayer player, String action) {
-        // A cannon somebody owns is not taken over by another player (ops excepted).
-        if (!isOwner(cannon, player)) {
+        // Starting, pausing and stopping are the owner's and the ops', public or not: the job runs on the owner's EMC.
+        if (!cannon.actsAsOwner(player)) {
+            cannon.refuse(player, "message.advancedschematicannon.cannon_owner_only");
             return;
         }
         switch (action) {
@@ -74,10 +74,10 @@ public final class CannonData {
 
     private static void settings(EMCSchematicCannonBlockEntity cannon, ServerPlayer player, List<Object> args) {
         // Public access lets anyone change the settings; private leaves them to the owner and ops.
-        boolean owner = isOwner(cannon, player);
-        if (!owner && !cannon.isPublicAccess()) {
+        if (!cannon.mayUse(player)) {
             return;
         }
+        boolean owner = cannon.actsAsOwner(player);
         int replaceMode = (Integer) args.get(0);
         int storageMode = (Integer) args.get(1);
         boolean skipMissing = (Boolean) args.get(2);
@@ -89,8 +89,8 @@ public final class CannonData {
         boolean previewVisible = (Boolean) args.get(8);
         boolean publicAccess = (Boolean) args.get(9);
         int fillerModule = (Integer) args.get(10);
-        // **Only the owner changes the public flag itself** - applied like the other settings, a third party
-        // could switch a public cannon to private and take it over.
+        // **Only the owner and ops change the public flag itself** - applied like the other settings, a third party
+        // could take a public cannon private and shut out everyone its owner had let in.
         if (owner) {
             cannon.setPublicAccess(publicAccess);
         }

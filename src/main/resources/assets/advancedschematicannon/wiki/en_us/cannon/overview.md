@@ -56,10 +56,18 @@ scroll to change it. Higher values build faster but draw more power.
 
 ## Owner icon
 
-The player face at the bottom right is whoever placed this cannon. **The border colour is
-the permission.**
+The player face at the bottom right is whoever placed this cannon — its **owner**. Opening the
+screen or starting a build does not change the owner. A cannon with no owner on record (placed by
+an earlier version and never opened, or placed by a Create deployer) goes to the first player who
+opens it.
 
-- **Green = public** — anyone can change the settings
-- **Red = private** — only the owner and operators can
+**The border colour is the permission.**
 
-Click it to switch, but **only the owner can do so**.
+- **Green = public** — anyone can open the screen and change the settings
+- **Red = private** — only the owner and operators can open it; anyone else is turned away with
+  the owner's name
+
+Either way, **only the owner and operators can start, pause or stop** a build. A build advances
+only while the owner is on the server, and when it spends EMC it spends the owner's.
+
+Click it to switch, but **only the owner and operators can do so**.

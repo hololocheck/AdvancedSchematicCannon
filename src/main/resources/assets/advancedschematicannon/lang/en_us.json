@@ -83,6 +83,8 @@
     "tooltip.advancedschematicannon.wand_shift_scroll": "Shift+Scroll: Adjust distance (1-15)",
     "message.advancedschematicannon.wand_distance": "Distance: %d blocks",
     "message.advancedschematicannon.wand_distance_reset": "Distance reset: %d blocks",
+    "message.advancedschematicannon.cannon_private": "This cannon is private to %s",
+    "message.advancedschematicannon.cannon_owner_only": "Only the owner (%s) and operators can start, pause or stop this cannon",
     "tooltip.advancedschematicannon.wand_shift_middle": "Shift+Middle Click: Reset distance",
     "gui.advancedschematicannon.io": "I/O",
     "gui.advancedschematicannon.inventory": "Inventory",

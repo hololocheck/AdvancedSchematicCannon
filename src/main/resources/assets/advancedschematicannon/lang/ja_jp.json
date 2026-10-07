@@ -83,6 +83,8 @@
     "tooltip.advancedschematicannon.wand_shift_scroll": "Shift+スクロール: 設置距離を調整 (1-15)",
     "message.advancedschematicannon.wand_distance": "設置距離: %dブロック",
     "message.advancedschematicannon.wand_distance_reset": "設置距離をリセット: %dブロック",
+    "message.advancedschematicannon.cannon_private": "%s の非公開の砲です",
+    "message.advancedschematicannon.cannon_owner_only": "開始・一時停止・停止は所有者 (%s) と op だけができます",
     "tooltip.advancedschematicannon.wand_shift_middle": "Shift+ホイール押込み: 距離をリセット",
     "gui.advancedschematicannon.io": "入出力",
     "gui.advancedschematicannon.inventory": "インベントリ",

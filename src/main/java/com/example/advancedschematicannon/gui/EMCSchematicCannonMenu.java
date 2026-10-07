@@ -326,11 +326,16 @@ public class EMCSchematicCannonMenu extends AbstractContainerMenu {
         return result;
     }
 
+    /**
+     * The server asks this every tick (ServerPlayer.tick) and closes the screen on false. The owner rule is asked here
+     * too, not only when the screen opened: a cannon switched private closes on everyone but its owner and ops.
+     */
     @Override
     public boolean stillValid(Player player) {
         return blockEntity.getLevel() != null &&
                 player.distanceToSqr(blockEntity.getBlockPos().getX() + 0.5,
                         blockEntity.getBlockPos().getY() + 0.5,
-                        blockEntity.getBlockPos().getZ() + 0.5) <= 64.0;
+                        blockEntity.getBlockPos().getZ() + 0.5) <= 64.0
+                && blockEntity.mayUse(player);
     }
 }
