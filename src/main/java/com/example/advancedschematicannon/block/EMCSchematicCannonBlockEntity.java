@@ -21,6 +21,8 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Clearable;
+import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
@@ -46,7 +48,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuProvider {
+public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuProvider, Clearable {
 
     public static final int MAX_ENERGY = 100_000;
     public static final int FE_PER_BLOCK = 500;
@@ -292,6 +294,37 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
                 ((com.example.advancedschematicannon.integration.AE2GridNodeManager) ae2GridNodeManager).destroy();
             } catch (Exception | NoClassDefFoundError e) { }
             ae2GridNodeManager = null;
+        }
+    }
+
+    /**
+     * Drops every slot where the cannon stands, and empties it. Both cannon blocks call this from {@code onRemove} when
+     * the block is replaced by another - broken (in creative too), blown up, {@code /setblock ... destroy}, a job placing
+     * over its own cannon - and not when only its facing changes. The user's decision of 2026-10-07: a broken cannon
+     * spills what it holds, as a chest does; until then its slots vanished with it. Each slot is emptied through the
+     * handler rather than left to {@link Containers#dropItemStack} draining the stack it is handed (IItemHandler forbids
+     * changing a stack getStackInSlot returns): a job that places over its own cannon goes on to the end of that tick
+     * taking material from these slots, and a slot still holding its stack would be dropped and placed both.
+     */
+    public void dropContents() {
+        for (int i = 0; i < itemHandler.getSlots(); i++) {
+            ItemStack stack = itemHandler.getStackInSlot(i);
+            if (stack.isEmpty()) continue;
+            itemHandler.setStackInSlot(i, ItemStack.EMPTY);
+            Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
+        }
+    }
+
+    /**
+     * {@link Clearable}, as for vanilla containers: {@code /setblock} and {@code /fill} without {@code destroy},
+     * {@code /clone}, and a structure placing a block with block entity data here, empty the cannon before they replace
+     * it, so {@link #dropContents} then finds nothing. Without it {@code /clone ... move} doubles the contents - it saves this cannon to load into the
+     * target and then replaces this one, which would drop them here as well (user's decision of 2026-10-07).
+     */
+    @Override
+    public void clearContent() {
+        for (int i = 0; i < itemHandler.getSlots(); i++) {
+            if (!itemHandler.getStackInSlot(i).isEmpty()) itemHandler.setStackInSlot(i, ItemStack.EMPTY);
         }
     }
 

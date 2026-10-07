@@ -56,6 +56,15 @@ public class EMCSchematicCannonBlock extends BaseEntityBlock {
     }
 
     @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        // Replaced by another block: what the cannon holds goes on the ground (EMCSchematicCannonBlockEntity.dropContents).
+        if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof EMCSchematicCannonBlockEntity cannon) {
+            cannon.dropContents();
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    @Override
     protected MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
     }
