@@ -121,8 +121,8 @@ public class EMCSchematicCannonMenu extends AbstractContainerMenu {
         // フォールバック: client BE がまだ届いていない場合。
         // - ProjectE 不在環境では EMC_CANNON_BLOCK が null になるため、
         //   常に存在する ENHANCED_CANNON_BLOCK を使う。
-        // - level を明示セットして stillValid() が早期 false にならないようにし、
-        //   GUI が一瞬で閉じる UX バグを回避する(本物の BE が届けば server 同期で動作)。
+        // - level を明示セットする(本物の BE が届けば server 同期で動作)。stillValid() は server でしか
+        //   聞かれないので、level の map に居ないこの代役がそれで閉じることはない。
         var fallbackBlock = ModRegistry.EMC_CANNON_BLOCK != null
                 ? ModRegistry.EMC_CANNON_BLOCK.get()
                 : ModRegistry.ENHANCED_CANNON_BLOCK.get();
@@ -329,6 +329,14 @@ public class EMCSchematicCannonMenu extends AbstractContainerMenu {
     /**
      * The server asks this every tick (ServerPlayer.tick) and closes the screen on false. The owner rule is asked here
      * too, not only when the screen opened: a cannon switched private closes on everyone but its owner and ops.
+     *
+     * <p>So is whether this cannon still stands here, as a chest asks ({@code Container.stillValidBlockEntity}) and the
+     * cannon's own manta:data host does ({@code CannonData.open}) - after the distance, as the host asks it, so a player
+     * who has walked off never has the chunk looked up. A removed block entity keeps its level, so until
+     * 2026-10-07 a broken cannon's screen stayed open over its emptied handler, and whatever went in afterwards vanished
+     * with the menu (measured on the real client that day; the user chose to close it). Only the server asks this -
+     * vanilla's callers are Player.tick, ServerPlayer.tick and ServerGamePacketListenerImpl - so the client's stand-ins
+     * (fromNetwork's fallback, the catalogue's, the wiki's), none of them in a level's map, never meet it.
      */
     @Override
     public boolean stillValid(Player player) {
@@ -336,6 +344,7 @@ public class EMCSchematicCannonMenu extends AbstractContainerMenu {
                 player.distanceToSqr(blockEntity.getBlockPos().getX() + 0.5,
                         blockEntity.getBlockPos().getY() + 0.5,
                         blockEntity.getBlockPos().getZ() + 0.5) <= 64.0
+                && blockEntity.getLevel().getBlockEntity(blockEntity.getBlockPos()) == blockEntity
                 && blockEntity.mayUse(player);
     }
 }
