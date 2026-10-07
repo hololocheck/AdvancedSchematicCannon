@@ -116,6 +116,8 @@
     "asc.wiki.play.opt.dont": "固体ブロック置換しない",
     "asc.wiki.play.opt.empty": "固体を空気で置換",
     "asc.wiki.play.opt.any": "固体を任意で置換",
+    "asc.wiki.play.opt.skip": "不足スキップ: 足りない分は飛ばす",
+    "asc.wiki.play.opt.protect": "BE 保護: チェスト等はそのまま残す",
     "asc.wiki.play.fill.board": "範囲指定ボードを入れます",
     "asc.wiki.play.fill.material": "材料は左のマス目へ",
     "asc.wiki.play.fill.modules": "フィラーモジュールは 7 つ",

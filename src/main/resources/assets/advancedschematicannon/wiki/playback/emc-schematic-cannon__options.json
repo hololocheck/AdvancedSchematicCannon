@@ -80,6 +80,35 @@
       "do": "click",
       "say": "asc.wiki.play.opt.any",
       "holdMs": 1600
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-mode-btn"
+        ]
+      },
+      "do": "click",
+      "holdMs": 900
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-skip-missing-toggle"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.opt.skip",
+      "holdMs": 1800
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-protect-be-toggle"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.opt.protect",
+      "holdMs": 1800
     }
   ]
 }

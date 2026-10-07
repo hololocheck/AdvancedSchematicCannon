@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -151,6 +152,139 @@ class LayoutStrictValidationTest {
         List<String> outside = new ArrayList<>();
         collectOutside(root, 100, 100, outside);
         assertFalse(outside.isEmpty(), "はみ出しを検出できないなら検出器として死んでいる");
+    }
+
+    /**
+     * 上の {@link #allLayoutsAreClean()} は「layout が参照する鍵は AscBindings にある」の向きしか見ない。
+     * 逆向き — AscBindings にあるのに、どの layout も参照しない鍵 — は画面が値を作るのに出す場所が無い部品で、
+     * 9483b11 (Manta への作り直し) で「不足ブロックスキップ」「ブロックエンティティ保護」のスイッチがこの形で
+     * 画面から消えた (controller・ヒント・送信は残り、layout にノードが無かった)。
+     */
+    @Test
+    @DisplayName("**AscBindings の鍵はどれも、いずれかの layout が参照している** (出す場所の無い部品を赤に)")
+    void everyCatalogKeyIsReferencedBySomeLayout() {
+        List<String> unreferenced = unreferencedKeys(layoutRoots());
+        assertTrue(unreferenced.isEmpty(),
+                "AscBindings にあるが、どの layout も参照しない鍵: " + unreferenced
+                        + " — 画面は値を作るのに、出す場所が無い");
+    }
+
+    @Test
+    @DisplayName("検出器として働くことの確認 — 帯から 2 つのスイッチを抜くと、その 6 つの鍵だけが red になる")
+    void unreferencedKeyCheckActuallyDetects() {
+        // 9483b11 の欠陥を出荷する layout の上で再現する: 2 つのスイッチのノードだけを抜く。
+        List<JsonObject> roots = layoutRoots();
+        int removed = 0;
+        for (JsonObject root : roots) {
+            removed += removeNodes(root, "asc-skip-missing-toggle", "asc-protect-be-toggle");
+        }
+        assertEquals(2, removed, "2 つのスイッチのノードが、出荷する layout に見つからない");
+        assertEquals(List.of(
+                        "asc-protect-be-knob-bg", "asc-protect-be-knob-x", "asc-protect-be-toggle-bg",
+                        "asc-skip-missing-knob-bg", "asc-skip-missing-knob-x", "asc-skip-missing-toggle-bg"),
+                unreferencedKeys(roots));
+    }
+
+    @Test
+    @DisplayName("検出器として働くことの確認 — モードボタンの wheelKey を消すと、その鍵だけが red になる")
+    void unreferencedWheelKeyCheckActuallyDetects() {
+        List<JsonObject> roots = layoutRoots();
+        int removed = 0;
+        for (JsonObject root : roots) {
+            removed += removeAttribute(root, "wheelKey", "asc-mode-val");
+        }
+        assertEquals(1, removed, "wheelKey asc-mode-val が、出荷する layout に見つからない");
+        assertEquals(List.of("asc-mode-val"), unreferencedKeys(roots));
+    }
+
+    /**
+     * AscBindings の鍵のうち、どの layout も参照しないもの (整列済み)。binding の参照は Manta の validator 自身に
+     * 数えさせる — 空の catalog を渡すと、binding として読む参照をすべて UNRESOLVED_BINDING で名指すので、
+     * どの属性が binding かをここに写さずに済む (写すと、Manta が属性を足したときに黙ってずれる)。
+     * wheelKey だけは名前で拾う: Manta の schema では binding ではなく EVENT_ID で、それを照合する軸は validator に
+     * 無い (LayoutValidatorScreen の UNVERIFIABLE_ACTION 撤去の注記) が、AscBindings はこの画面の wheelKey
+     * (onElementWheel が受ける鍵) も並べている。
+     */
+    private static List<String> unreferencedKeys(List<JsonObject> roots) {
+        java.util.Set<String> referenced = new java.util.HashSet<>();
+        for (JsonObject root : roots) {
+            var ctx = ValidationContext.coreStrict("advancedschematicannon:layouts")
+                    .withBindings(java.util.Set.of());
+            for (LayoutValidator.Issue i : LayoutValidator.validateBindings(root, ctx)) {
+                if ("UNRESOLVED_BINDING".equals(i.code())) referenced.add(i.actual());
+            }
+            collectWheelKeys(root, referenced);
+        }
+        assertFalse(referenced.isEmpty(), "validator が参照を 1 つも名指さない — 検出器として死んでいる");
+        return AscBindings.KEYS.stream().filter(k -> !referenced.contains(k)).sorted().toList();
+    }
+
+    private static void collectWheelKeys(JsonObject n, java.util.Set<String> out) {
+        if (n.has("wheelKey") && n.get("wheelKey").isJsonPrimitive()) out.add(n.get("wheelKey").getAsString());
+        for (JsonObject kid : kids(n)) collectWheelKeys(kid, out);
+    }
+
+    /** {@code attribute} の値が {@code value} のノードからその属性を消し、消した数を返す。 */
+    private static int removeAttribute(JsonObject n, String attribute, String value) {
+        int removed = 0;
+        if (n.has(attribute) && n.get(attribute).isJsonPrimitive() && value.equals(n.get(attribute).getAsString())) {
+            n.remove(attribute);
+            removed++;
+        }
+        for (JsonObject kid : kids(n)) removed += removeAttribute(kid, attribute, value);
+        return removed;
+    }
+
+    /** children と repeat の template (engine が描く行の元)。 */
+    private static List<JsonObject> kids(JsonObject n) {
+        List<JsonObject> out = new ArrayList<>();
+        if (n.has("children") && n.get("children").isJsonArray()) {
+            for (var c : n.getAsJsonArray("children")) {
+                if (c.isJsonObject()) out.add(c.getAsJsonObject());
+            }
+        }
+        if (n.has("template") && n.get("template").isJsonObject()) out.add(n.getAsJsonObject("template"));
+        return out;
+    }
+
+    private static List<JsonObject> layoutRoots() {
+        List<JsonObject> roots = new ArrayList<>();
+        for (Path p : layoutFiles()) {
+            try {
+                roots.add(JsonParser.parseString(
+                        Files.readString(p, StandardCharsets.UTF_8)).getAsJsonObject());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return roots;
+    }
+
+    /** {@code classes} のどれかを持つ子ノードを部分木ごと取り除き、取り除いた数を返す。 */
+    private static int removeNodes(JsonObject n, String... classes) {
+        if (!n.has("children") || !n.get("children").isJsonArray()) return 0;
+        int removed = 0;
+        com.google.gson.JsonArray kept = new com.google.gson.JsonArray();
+        for (var c : n.getAsJsonArray("children")) {
+            if (c.isJsonObject() && hasAnyClass(c.getAsJsonObject(), classes)) {
+                removed++;
+                continue;
+            }
+            if (c.isJsonObject()) removed += removeNodes(c.getAsJsonObject(), classes);
+            kept.add(c);
+        }
+        n.add("children", kept);
+        return removed;
+    }
+
+    private static boolean hasAnyClass(JsonObject n, String... classes) {
+        if (!n.has("classes") || !n.get("classes").isJsonArray()) return false;
+        for (var e : n.getAsJsonArray("classes")) {
+            for (String c : classes) {
+                if (e.isJsonPrimitive() && c.equals(e.getAsString())) return true;
+            }
+        }
+        return false;
     }
 
     /** root の classes に "dialog" を含むか (= 画面 / ダイアログとして扱うか)。 */

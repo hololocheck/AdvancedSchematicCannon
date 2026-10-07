@@ -139,8 +139,12 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
     private int reuseKnobX0, previewKnobX0, emcKnobX0, thumbY0;
     private MantaState pushedOverlay;
     private ColorSlot oDontReplace, oReplaceSolid, oReplaceAny, oReplaceEmpty,
-            oFill, oErase, oRemove, oWall, oTower, oBox, oCircleWall;
+            oFill, oErase, oRemove, oWall, oTower, oBox, oCircleWall,
+            oSkipMissingTrack, oSkipMissingKnob, oProtectBeTrack, oProtectBeKnob;
     private BoolSlot oSchematicMode, oFillerMode;
+    private NumberSlot nSkipMissingKnobX, nProtectBeKnobX;
+    /** The two knobs' declared positions in the option strip's document, read off it when the strip opens. */
+    private int skipMissingKnobX0, protectBeKnobX0;
 
     public EMCSchematicCannonScreenV2(EMCSchematicCannonMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -396,8 +400,8 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
 
     // getDynamicNumber: gone. The seven dynamic boxes of the main page (the two fills, the
     // thumb's y and h, the three knobs' x) are pushed - see pushAll(); the hint toggle's knob is
-    // pushed by the base screen (FrameworkState). The skip-missing and protect-be knobs this used
-    // to answer are declared by no layout of this mod, so nothing asked for them.
+    // pushed by the base screen (FrameworkState). The skip-missing and protect-be knobs are the
+    // option strip's - see pushOverlay().
 
     private int blockThumbH() {
         // ピクセル単位の thumb 高さ。 式は `ScrollViewport.thumbH` が持つ
@@ -496,6 +500,16 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
             oCircleWall = pushedOverlay.color("asc-filler-circle-wall-color");
             oSchematicMode = pushedOverlay.bool("asc-schematic-mode");
             oFillerMode = pushedOverlay.bool("asc-filler-mode");
+            oSkipMissingTrack = pushedOverlay.color("asc-skip-missing-toggle-bg");
+            oSkipMissingKnob = pushedOverlay.color("asc-skip-missing-knob-bg");
+            oProtectBeTrack = pushedOverlay.color("asc-protect-be-toggle-bg");
+            oProtectBeKnob = pushedOverlay.color("asc-protect-be-knob-bg");
+            nSkipMissingKnobX = pushedOverlay.number("asc-skip-missing-knob-x");
+            nProtectBeKnobX = pushedOverlay.number("asc-protect-be-knob-x");
+            com.google.gson.JsonObject strip = com.google.gson.JsonParser.parseString(
+                    loadModResourceJson(AdvancedSchematicCannon.MOD_ID, OPTIONS_LAYOUT)).getAsJsonObject();
+            skipMissingKnobX0 = declared(strip, "asc-skip-missing-toggle-knob", "x");
+            protectBeKnobX0 = declared(strip, "asc-protect-be-toggle-knob", "x");
             pushOverlay();
         }
     }
@@ -558,7 +572,11 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
      * rather than copied into this file.
      */
     private int declared(String className, String property) {
-        com.google.gson.JsonObject root = JsonLayoutScreen.layoutOf(this);
+        return declared(JsonLayoutScreen.layoutOf(this), className, property);
+    }
+
+    /** {@link #declared(String, String)} in the given document - the option strip's, for its two knobs. */
+    private static int declared(com.google.gson.JsonObject root, String className, String property) {
         java.util.ArrayDeque<com.google.gson.JsonObject> queue = new java.util.ArrayDeque<>();
         if (root != null) queue.add(root);
         while (!queue.isEmpty()) {
@@ -602,6 +620,12 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         pushedOverlay.set(oCircleWall, sel(fillerModule == FillerModule.CIRCLE_WALL));
         pushedOverlay.set(oSchematicMode, !fillerMode);
         pushedOverlay.set(oFillerMode, fillerMode);
+        pushedOverlay.set(oSkipMissingTrack, skipMissingToggle.trackBg());
+        pushedOverlay.set(oSkipMissingKnob, skipMissingToggle.knobBg());
+        pushedOverlay.set(nSkipMissingKnobX, skipMissingToggle.knobX(skipMissingKnobX0));
+        pushedOverlay.set(oProtectBeTrack, protectBeToggle.trackBg());
+        pushedOverlay.set(oProtectBeKnob, protectBeToggle.knobBg());
+        pushedOverlay.set(nProtectBeKnobX, protectBeToggle.knobX(protectBeKnobX0));
     }
 
     // ================================================================= clicks
@@ -613,8 +637,6 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         // and its knob's x are the base screen's to push, every frame (FrameworkState), so all
         // three move on the frame after the click.
         if (HintToggleHelper.handleClick(classes)) return;
-        if (skipMissingToggle.handleClick(classes)) return;
-        if (protectBeToggle.handleClick(classes)) return;
         if (reuseToggle.handleClick(classes)) return;
         if (previewToggle.handleClick(classes)) return;
         if (emcToggle.handleClick(classes)) return;
@@ -654,6 +676,10 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
      */
     @Override
     protected boolean handleOverlayClick(String[] classes, int mouseX, int mouseY, int button) {
+        // The two switches of the schematic mode sit in the strip beside the replace modes (as in the settings tab
+        // before the Manta rebuild); a flip leaves the strip open, so the knob is seen to move.
+        if (skipMissingToggle.handleClick(classes)) return true;
+        if (protectBeToggle.handleClick(classes)) return true;
         for (String c : classes) {
             switch (c) {
 

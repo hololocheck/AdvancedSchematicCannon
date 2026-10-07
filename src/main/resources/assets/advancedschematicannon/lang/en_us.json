@@ -116,6 +116,8 @@
     "asc.wiki.play.opt.dont": "Don't replace solid blocks",
     "asc.wiki.play.opt.empty": "Replace solid with air",
     "asc.wiki.play.opt.any": "Replace solid with any",
+    "asc.wiki.play.opt.skip": "Skip missing: go on without it",
+    "asc.wiki.play.opt.protect": "Protect: chests and the like stay",
     "asc.wiki.play.fill.board": "The range board goes in",
     "asc.wiki.play.fill.material": "Materials go in the grid",
     "asc.wiki.play.fill.modules": "Seven filler modules",
