@@ -6,6 +6,10 @@ tags: [gui]
 
 # The cannon screen
 
+![](bws:advancedschematicannon:wiki/screens/emc-schematic-cannon__en_us.png)
+
+The screen above runs on a sample cannon: a name in the block list, then play, speed, pause, reuse and preview, the owner icon, and stop.
+
 [[TOC]]
 
 ## Layout

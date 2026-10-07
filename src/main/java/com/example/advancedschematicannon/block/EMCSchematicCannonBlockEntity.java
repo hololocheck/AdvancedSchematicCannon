@@ -1813,6 +1813,115 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
         syncToClient();
     }
 
+    // ===== The wiki's stand-in (改善1, 2026-10-07) =====
+
+    /** A loaded schematic's blocks for the wiki's stand-in: registry name, count. */
+    private static final String[][] WIKI_BLOCKS = {
+            {"minecraft:stone_bricks", "512"}, {"minecraft:oak_planks", "384"}, {"minecraft:spruce_log", "96"},
+            {"minecraft:glass_pane", "160"}, {"minecraft:bricks", "224"}, {"minecraft:oak_stairs", "128"},
+            {"minecraft:stone_brick_slab", "64"}, {"minecraft:lantern", "24"}, {"minecraft:oak_door", "8"},
+            {"minecraft:white_wool", "48"}, {"minecraft:cobblestone", "256"}, {"minecraft:oak_fence", "72"}};
+
+    /**
+     * Makes this block entity - one the wiki's stand-in built, in no level, so its writes and its sync reach nothing
+     * ({@code EMCSchematicCannonScreenV2.wikiCreate}) - a cannon with a schematic loaded: the block list and its total,
+     * three quarters of its energy, {@code owner} as its owner, the AE2 storage choices offered so the storage selector
+     * can be shown turning, and a speed of 3 blocks a tick - the default 256 would place the whole list at once.
+     */
+    public void wikiDemo(UUID owner) {
+        ownerUUID = owner;
+        ae2Available = true;
+        blocksPerTick = 3;
+        energyStorage.setStoredInternal(MAX_ENERGY * 3 / 4);
+        wikiLoad();
+    }
+
+    /** The schematic read again, as a start after a stop reads it: the block list, the total, nothing placed. */
+    private void wikiLoad() {
+        blockSummary.clear();
+        int total = 0;
+        for (String[] block : WIKI_BLOCKS) {
+            int count = Integer.parseInt(block[1]);
+            blockSummary.put(block[0], count);
+            total += count;
+        }
+        totalBlocks = total;
+        placedBlocks = 0;
+    }
+
+    /** The blocks a range holds for the stand-in's removal: registry name, count. */
+    private static final String[][] WIKI_RANGE = {
+            {"minecraft:dirt", "288"}, {"minecraft:stone", "160"}, {"minecraft:grass_block", "96"},
+            {"minecraft:oak_log", "24"}, {"minecraft:oak_leaves", "64"}, {"minecraft:gravel", "32"}};
+    /** The blocks a range takes for the stand-in's other filler modules. */
+    private static final int WIKI_FILLER_TOTAL = 480;
+
+    /**
+     * The range read as {@link #generateFillerPlacements} reads it at a filler start: the removal lists the blocks the
+     * range holds; the other modules have a total and no list.
+     */
+    private void wikiLoadRange() {
+        blockSummary.clear();
+        int total = 0;
+        if (fillerModule == FillerModule.REMOVE) {
+            for (String[] block : WIKI_RANGE) {
+                int count = Integer.parseInt(block[1]);
+                blockSummary.put(block[0], count);
+                total += count;
+            }
+        } else {
+            total = WIKI_FILLER_TOTAL;
+        }
+        totalBlocks = total;
+        placedBlocks = 0;
+    }
+
+    /**
+     * The stand-in's play, pause and stop, as {@code network.CannonData}'s action applies them to a real cannon - without
+     * a player, a level or placements: a start reads the schematic again after a stop, and in the filler mode reads the
+     * range - an error without a range board holding a range in the schematic slot, as {@link #startPlacement} answers
+     * through {@link #generateFillerPlacements}.
+     */
+    public void wikiAction(String action) {
+        switch (action) {
+            case "START" -> {
+                if (state == State.RUNNING || state == State.PAUSED) return;
+                if (fillerMode) {
+                    ItemStack board = itemHandler.getStackInSlot(SLOT_SCHEMATIC);
+                    if (!isRangeBoardItem(board)
+                            || !com.example.advancedschematicannon.item.RangeBoardItem.hasRange(board)) {
+                        state = State.ERROR;
+                        return;
+                    }
+                    wikiLoadRange();
+                } else if (totalBlocks <= 0) {
+                    wikiLoad();
+                }
+                placedBlocks = 0;
+                state = State.RUNNING;
+            }
+            case "PAUSE" -> pausePlacement();
+            case "RESUME" -> resumePlacement();
+            case "STOP" -> stopPlacement();
+            default -> { }
+        }
+    }
+
+    /**
+     * The stand-in at work: {@code blocks} more placed while running; at the total it finishes as the cannon's tick
+     * finishes - the list and the progress reset.
+     */
+    public void wikiPlace(int blocks) {
+        if (state != State.RUNNING || blocks <= 0) return;
+        placedBlocks = Math.min(totalBlocks, placedBlocks + blocks);
+        if (placedBlocks >= totalBlocks) {
+            state = State.FINISHED;
+            blockSummary.clear();
+            placedBlocks = 0;
+            totalBlocks = 0;
+        }
+    }
+
     // ===== フィラーモード: プレースメント生成 =====
 
     private boolean generateFillerPlacements(ServerPlayer player) {

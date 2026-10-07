@@ -35,6 +35,8 @@ public class AdvancedSchematicCannon {
     }
 
     private void onClientSetup(FMLClientSetupEvent event) {
+        // The cannon's screen, drawn live on its wiki pages and operated there by their scripts.
+        com.example.advancedschematicannon.gui.AscWikiLive.register();
         LOGGER.info("Advanced Schematic Cannon client setup complete.");
     }
 

@@ -59,7 +59,8 @@ import java.util.Map;
  * 「動かしたつもりが戻る」が再発する (旧実装のコメントに記録されていた実害)。
  */
 @OnlyIn(Dist.CLIENT)
-public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCannonMenu> {
+public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCannonMenu>
+        implements com.manta.api.wiki.WikiLocalMenu {
 
     /** Every value on this screen's pages is pushed (MANTA_7_CONCEPT §4.2): a page asks it nothing. */
     @Override
@@ -853,11 +854,110 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
     }
 
     /**
-     * Puts the screen in a named state for BelugaAOS's UI sweep ({@link AscScreenCatalogue}): "options" opens the option
-     * strip, "main" leaves it closed.
+     * Puts the screen in a named state for BelugaAOS's UI sweep ({@link AscScreenCatalogue}) and the wiki
+     * ({@link AscWikiLive}): "options" opens the option strip, "main" and "storage" leave it closed; "filler" is the
+     * wiki's stand-in switched to the filler mode (nothing on a screen the player opened).
      */
     void wikiApplyState(String state) {
         optionStrip.setOpen("options".equals(state));
+        if ("filler".equals(state) && wikiMode) {
+            // A schematic leaving the slot clears the list (the cannon's tick): the filler mode starts with none.
+            setFillerMode(true);
+            wikiAction(menu.getBlockEntity(), "STOP");
+        }
+    }
+
+    // ================================================================= the wiki's stand-in (改善1, 2026-10-07)
+
+    /**
+     * The wiki's stand-in: on its own cannon ({@link #wikiCreate}) the play, pause and stop, the settings and the owner's
+     * toggle act on that cannon instead of sending ({@link #sendAllSettings}, {@link #onPlayPressed}), it places blocks
+     * while it runs ({@link #wikiFrame}), and its slots are the wiki's to click. False for a screen the player opened.
+     */
+    private boolean wikiMode = false;
+    /** The stand-in's last frame, and the blocks placed short of a whole one since. */
+    private long wikiFrameAt = 0L;
+    private double wikiCarry = 0;
+
+    /**
+     * The wiki's stand-in (改善1: every Manta UI screen operated in the wiki): a cannon of its own, in no level - its
+     * block entity's writes and sync need one, so nothing it does reaches the world - with a schematic's block list, energy
+     * and the player as its owner ({@code EMCSchematicCannonBlockEntity.wikiDemo}), over a throwaway inventory holding a
+     * stack of stone and a range board for the filler mode's slots. Null without a player.
+     */
+    public static EMCSchematicCannonScreenV2 wikiCreate() {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.player == null) return null;
+        net.minecraft.world.level.block.Block block =
+                com.example.advancedschematicannon.ModRegistry.EMC_CANNON_BLOCK != null
+                        ? com.example.advancedschematicannon.ModRegistry.EMC_CANNON_BLOCK.get()
+                        : com.example.advancedschematicannon.ModRegistry.ENHANCED_CANNON_BLOCK.get();
+        EMCSchematicCannonBlockEntity be =
+                new EMCSchematicCannonBlockEntity(mc.player.blockPosition(), block.defaultBlockState());
+        be.wikiDemo(mc.player.getUUID());
+        Inventory inv = new Inventory(mc.player);
+        inv.setItem(0, new ItemStack(Items.STONE_BRICKS, 64));
+        // A board with its range marked (an unmarked one makes a real cannon's filler start an error): 8 x 5 x 8 beside it.
+        ItemStack board = new ItemStack(com.example.advancedschematicannon.ModRegistry.RANGE_BOARD_ITEM.get());
+        net.minecraft.core.BlockPos at = mc.player.blockPosition();
+        board.set(com.example.advancedschematicannon.item.ModDataComponents.RANGE_POS1.get(), at.offset(2, 0, 2));
+        board.set(com.example.advancedschematicannon.item.ModDataComponents.RANGE_POS2.get(), at.offset(9, 4, 9));
+        inv.setItem(1, board);
+        EMCSchematicCannonScreenV2 s =
+                new EMCSchematicCannonScreenV2(new EMCSchematicCannonMenu(0, inv, be), inv, be.getDisplayName());
+        s.wikiMode = true;
+        return s;
+    }
+
+    /** The stand-in's play, pause or stop on its own cannon; the next frame places from here. */
+    private void wikiAction(EMCSchematicCannonBlockEntity be, String action) {
+        be.wikiAction(action);
+        wikiCarry = 0;
+        pushAll();
+    }
+
+    /** The stand-in's menu is its own throwaway one: the wiki may click its slots. */
+    @Override
+    public boolean wikiLocalMenu() {
+        return wikiMode;
+    }
+
+    /** The stand-in's settings, applied to its own cannon in the order {@code network.CannonData} applies them. */
+    private void wikiApplySettings(EMCSchematicCannonBlockEntity be) {
+        be.setPublicAccess(publicAccess);
+        be.setReplaceMode(replaceMode);
+        be.setStorageMode(storageMode);
+        be.setSkipMissing(skipMissing);
+        be.setSkipTileEntities(protectBlockEntities);
+        be.setUseEmc(useEmc);
+        be.setBlocksPerTick(blocksPerTick());
+        be.setReuseSchematic(reuseSchematic);
+        be.setFillerMode(fillerMode);
+        be.setPreviewVisible(previewVisible);
+        be.setFillerModule(fillerModule);
+    }
+
+    /**
+     * Each frame of the stand-in (no tick reaches a wiki screen): while its cannon runs it places blocks at the cannon's
+     * rate - its speed, per tick of 50 ms - and the page is pushed what moved.
+     */
+    private void wikiFrame() {
+        long now = System.currentTimeMillis();
+        EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
+        if (be != null && wikiFrameAt > 0L && be.getCannonState() == EMCSchematicCannonBlockEntity.State.RUNNING) {
+            wikiCarry += Math.min(250L, now - wikiFrameAt) / 50.0 * blocksPerTick();
+            int whole = (int) wikiCarry;
+            wikiCarry -= whole;
+            be.wikiPlace(whole);
+        }
+        wikiFrameAt = now;
+        pushAll();
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (wikiMode) wikiFrame();
+        super.render(g, mouseX, mouseY, partialTick);
     }
 
     private static final String OPTIONS_LAYOUT = "layouts/emc-schematic-cannon-options.json";
@@ -891,6 +991,10 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
             case PAUSED -> "RESUME";
             default -> null;
         };
+        if (wikiMode) {
+            if (action != null) wikiAction(be, action);
+            return;
+        }
         com.manta.api.data.Mirror data = data();
         if (action != null && data != null) {
             data.send("cannon-action", action);
@@ -901,6 +1005,10 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         if (!canPause()) return;
         EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
         if (be == null) return;
+        if (wikiMode) {
+            wikiAction(be, "PAUSE");
+            return;
+        }
         com.manta.api.data.Mirror data = data();
         if (data != null) {
             data.send("cannon-action", "PAUSE");
@@ -911,6 +1019,10 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         if (!canStop()) return;
         EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
         if (be == null) return;
+        if (wikiMode) {
+            wikiAction(be, "STOP");
+            return;
+        }
         com.manta.api.data.Mirror data = data();
         if (data != null) {
             data.send("cannon-action", "STOP");
@@ -948,9 +1060,11 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         // 30 tick (1.5s): サーバー往復 + 反映時間を見込む。短すぎるとサーバー反映前に
         // containerTick が旧値で上書きし「動かしたつもりが戻る」UX バグが起きる (旧実装の実害)。
         syncCooldown = 30;
-        pushAll();
         EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
-        if (be == null) return;
+        // The wiki's stand-in sends nothing: its own cannon takes the settings.
+        if (wikiMode && be != null) wikiApplySettings(be);
+        pushAll();
+        if (wikiMode || be == null) return;
         com.manta.api.data.Mirror data = data();
         if (data == null) return;
         // The params of the layout's `cannon-settings` action, in its declaration order.

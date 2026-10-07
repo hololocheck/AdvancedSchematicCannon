@@ -6,7 +6,7 @@ tags: [mode]
 
 # Filler mode
 
-Works on **the region marked with the **[**Range Board**](../tools/range-board.md) instead of a
+Works on **the region marked** with the [Range Board](../tools/range-board.md) instead of a
 schematic.
 
 [[TOC]]
@@ -17,6 +17,10 @@ schematic.
 2. Put that board into the cannon's **schematic slot** in the I/O row.
 3. Put the **materials to use** into the grid on the left (4 columns x 16 rows).
 4. Pick a module and press play.
+
+![](bws:advancedschematicannon:wiki/screens/emc-schematic-cannon__filler__en_us.png)
+
+The screen above is a sample cannon: the range board and the materials go in with shift-clicks, Wall plays and stops, Remove turns the grid into the list of the range's blocks once it plays (a real cannon in Remove also lists them the moment a board with a range goes in), and the wheel on the mode button goes back to Schematic mode.
 
 ## Modules
 

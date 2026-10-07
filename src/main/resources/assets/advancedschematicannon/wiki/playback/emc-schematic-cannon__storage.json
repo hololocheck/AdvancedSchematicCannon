@@ -1,0 +1,40 @@
+{
+  "schema": "manta-playback/1",
+  "loop": true,
+  "restartHoldMs": 1500,
+  "steps": [
+    {
+      "target": {
+        "classes": [
+          "asc-storage-val"
+        ]
+      },
+      "do": "wheel",
+      "delta": 1,
+      "say": "asc.wiki.play.storage.ae",
+      "holdMs": 1700
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-storage-val"
+        ]
+      },
+      "do": "wheel",
+      "delta": 1,
+      "say": "asc.wiki.play.storage.chest",
+      "holdMs": 1700
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-storage-val"
+        ]
+      },
+      "do": "wheel",
+      "delta": 1,
+      "say": "asc.wiki.play.storage.both",
+      "holdMs": 1700
+    }
+  ]
+}

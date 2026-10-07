@@ -11,7 +11,10 @@ tags: [ae2, projecte]
 ## Storage selection
 
 The **Storage** control decides where materials are taken from. Hover the value and scroll
-to change it.
+to change it. It only turns **while AE2 is installed**; without AE2 it stays at **Chests only** (the sample cannon in
+the picture below runs as if AE2 were there).
+
+![](bws:advancedschematicannon:wiki/screens/emc-schematic-cannon__storage__en_us.png)
 
 | Setting | Source |
 |---|---|

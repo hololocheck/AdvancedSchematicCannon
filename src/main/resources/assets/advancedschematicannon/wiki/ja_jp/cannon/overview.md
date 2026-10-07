@@ -6,6 +6,10 @@ tags: [gui]
 
 # 砲の画面
 
+![](bws:advancedschematicannon:wiki/screens/emc-schematic-cannon__ja_jp.png)
+
+上の画面は見本の砲で動いています: 一覧のマス目の名前、再生・速度・一時停止、再利用とプレビュー、所有者アイコン、停止の順に操作して見せます。
+
 [[TOC]]
 
 ## 画面の構成

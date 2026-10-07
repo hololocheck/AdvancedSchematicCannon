@@ -1,0 +1,121 @@
+{
+  "schema": "manta-playback/1",
+  "loop": true,
+  "restartHoldMs": 1500,
+  "steps": [
+    {
+      "target": {
+        "classes": [
+          "asc-block-list"
+        ],
+        "at": [
+          0.125,
+          0.031
+        ]
+      },
+      "do": "hover",
+      "say": "asc.wiki.play.main.list",
+      "holdMs": 2200
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-play"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.main.play",
+      "holdMs": 2400
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-speed-val"
+        ]
+      },
+      "do": "wheel",
+      "delta": 1,
+      "say": "asc.wiki.play.main.speed",
+      "holdMs": 250
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-speed-val"
+        ]
+      },
+      "do": "wheel",
+      "delta": 1,
+      "holdMs": 1800
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-pause"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.main.pause",
+      "holdMs": 1600
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-play"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.main.resume",
+      "holdMs": 1800
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-reuse-toggle"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.main.reuse",
+      "holdMs": 1400
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-preview-toggle"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.main.preview",
+      "holdMs": 1400
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-owner-face-canvas"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.main.owner",
+      "holdMs": 1700
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-owner-face-canvas"
+        ]
+      },
+      "do": "click",
+      "holdMs": 1200
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-stop"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.main.stop",
+      "holdMs": 2200
+    }
+  ]
+}

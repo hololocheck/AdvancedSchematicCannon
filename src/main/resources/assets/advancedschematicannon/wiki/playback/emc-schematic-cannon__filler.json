@@ -1,0 +1,120 @@
+{
+  "schema": "manta-playback/1",
+  "loop": true,
+  "restartHoldMs": 1500,
+  "steps": [
+    {
+      "target": {
+        "classes": [
+          "inv-slot"
+        ],
+        "index": 28
+      },
+      "do": "slot",
+      "quick": true,
+      "say": "asc.wiki.play.fill.board",
+      "holdMs": 1600
+    },
+    {
+      "target": {
+        "classes": [
+          "inv-slot"
+        ],
+        "index": 27
+      },
+      "do": "slot",
+      "quick": true,
+      "say": "asc.wiki.play.fill.material",
+      "holdMs": 1600
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-mode-btn"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.fill.modules",
+      "holdMs": 1400
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-filler-wall"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.fill.wall",
+      "holdMs": 1500
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-play"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.fill.play",
+      "holdMs": 2400
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-stop"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.fill.stop",
+      "holdMs": 1300
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-mode-btn"
+        ]
+      },
+      "do": "click",
+      "holdMs": 900
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-filler-remove"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.fill.remove",
+      "holdMs": 1500
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-play"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.fill.list",
+      "holdMs": 2600
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-stop"
+        ]
+      },
+      "do": "click",
+      "holdMs": 1200
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-mode-btn"
+        ]
+      },
+      "do": "wheel",
+      "delta": 1,
+      "say": "asc.wiki.play.fill.back",
+      "holdMs": 1800
+    }
+  ]
+}

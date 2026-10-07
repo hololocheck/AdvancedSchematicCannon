@@ -1,0 +1,85 @@
+{
+  "schema": "manta-playback/1",
+  "loop": true,
+  "restartHoldMs": 1500,
+  "steps": [
+    {
+      "target": {
+        "classes": [
+          "asc-dont-replace"
+        ]
+      },
+      "do": "hover",
+      "say": "asc.wiki.play.opt.strip",
+      "holdMs": 1800
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-replace-solid"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.opt.solid",
+      "holdMs": 1600
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-mode-btn"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.opt.open",
+      "holdMs": 1100
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-dont-replace"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.opt.dont",
+      "holdMs": 1600
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-mode-btn"
+        ]
+      },
+      "do": "click",
+      "holdMs": 900
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-replace-empty"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.opt.empty",
+      "holdMs": 1600
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-mode-btn"
+        ]
+      },
+      "do": "click",
+      "holdMs": 900
+    },
+    {
+      "target": {
+        "classes": [
+          "asc-replace-any"
+        ]
+      },
+      "do": "click",
+      "say": "asc.wiki.play.opt.any",
+      "holdMs": 1600
+    }
+  ]
+}
