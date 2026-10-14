@@ -326,6 +326,19 @@ class LayoutStrictValidationTest {
     }
 
     /**
+     * {@link #allLayoutsAreClean()} は Manta の icon 一覧が読めた時だけ icon を確かめ、読めなければ黙って飛ばす。
+     * これは「読めた」と言う側 — Orca・Xenophora の同名 test では 2026-10-14 まで一度も読めていなかった。
+     */
+    @Test
+    @DisplayName("icon 検査が届いていることの確認 — Manta の icon 一覧が読めて x と chevron-down を含む")
+    void theIconCatalogIsRead() {
+        var icons = iconCatalog();
+        // 一覧の id は名前空間なし。layout は manta:x と書く (一覧の x)。
+        assertTrue(icons != null && icons.contains("x") && icons.contains("chevron-down"),
+                "Manta の icon 一覧が読めない — allLayoutsAreClean の icon 検査は何も見ていない");
+    }
+
+    /**
      * layout dir を探す。cwd は実行方法で変わる (ModDevGradle の unit test は
      * {@code build/minecraft-junit}) ので決め打ちの相対パスは使えない。見つからなければ
      * green にせず fail させる — 「0 件だから合格」を防ぐ。
