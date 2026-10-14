@@ -26,9 +26,9 @@ the **I/O** row.
 
 Choose where materials come from with the **Storage** control on the right.
 
-- **Extract from AE2 & Chests** — search both
-- **AE only** — the ME network only
-- **Chests only** — adjacent containers only
+- **From AE2 & Chests** — search both
+- **From AE2 Only** — the ME network only
+- **From Chests Only** — adjacent containers only
 
 ## 4. Start
 

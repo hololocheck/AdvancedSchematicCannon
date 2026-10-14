@@ -883,7 +883,9 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
     /**
      * Puts the screen in a named state for BelugaAOS's UI sweep ({@link AscScreenCatalogue}) and the wiki
      * ({@link AscWikiLive}): "options" opens the option strip, "main" and "storage" leave it closed; "filler" is the
-     * wiki's stand-in switched to the filler mode (nothing on a screen the player opened).
+     * wiki's stand-in switched to the filler mode (nothing on a screen the player opened). The sweep's four storage
+     * states put the catalogue's cannon in the storage value they name, so every label {@link #storageKey} answers is
+     * measured against its box, not only the one a new cannon starts with.
      */
     void wikiApplyState(String state) {
         optionStrip.setOpen("options".equals(state));
@@ -892,6 +894,29 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
             setFillerMode(true);
             wikiAction(menu.getBlockEntity(), "STOP");
         }
+        switch (state) {
+            case "storage-ae-only" -> cannonIn(false, StorageMode.AE_ONLY);
+            case "storage-chest-only" -> cannonIn(false, StorageMode.CHEST_ONLY);
+            case "remove-into-ae" -> cannonIn(true, StorageMode.AE_ONLY);
+            case "remove-into-chest" -> cannonIn(true, StorageMode.CHEST_ONLY);
+            default -> { }
+        }
+    }
+
+    /**
+     * The catalogue's cannon - a block entity of this client only - set to {@code storage} in the schematic mode, or in
+     * the filler mode's remove module, then read back the way a tick reads a cannon's settings: without AE2 an AE value
+     * shows the chest label, as it does to a player.
+     */
+    private void cannonIn(boolean remove, StorageMode storage) {
+        EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
+        if (be == null) return;
+        be.setFillerMode(remove);
+        if (remove) be.setFillerModule(FillerModule.REMOVE);
+        be.setStorageMode(storage);
+        syncCooldown = 0;
+        tickSettings();
+        pushAll();
     }
 
     // ================================================================= the wiki's stand-in (改善1, 2026-10-07)

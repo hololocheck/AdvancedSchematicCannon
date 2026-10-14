@@ -41,8 +41,8 @@ Click the mode button to reveal the seven icons.
 In **Remove**, the grid on the left is not material slots — it becomes the **list of blocks
 found inside the region**. Where they go follows the storage setting.
 
-- **Insert into AE** — into the ME network
-- **Insert into chest** — into adjacent containers
+- **Insert to AE2** — into the ME network
+- **Insert to Chests** — into adjacent containers
 
 On the EMC Schematic Cannon with **Use EMC** enabled, collected blocks can be converted to
 EMC instead.

@@ -11,19 +11,19 @@ tags: [ae2, projecte]
 ## Storage selection
 
 The **Storage** control decides where materials are taken from. Hover the value and scroll
-to change it. It only turns **while AE2 is installed**; without AE2 it stays at **Chests only** (the sample cannon in
+to change it. It only turns **while AE2 is installed**; without AE2 it stays at **From Chests Only** (the sample cannon in
 the picture below runs as if AE2 were there).
 
 ![](bws:advancedschematicannon:wiki/screens/emc-schematic-cannon__storage__en_us.png)
 
 | Setting | Source |
 |---|---|
-| **Extract from AE2 & Chests** | Both the ME network and adjacent containers |
-| **AE only** | The ME network only |
-| **Chests only** | Adjacent containers only |
+| **From AE2 & Chests** | Both the ME network and adjacent containers |
+| **From AE2 Only** | The ME network only |
+| **From Chests Only** | Adjacent containers only |
 
 In Remove mode the meaning flips to the destination, and the choice narrows to
-**Insert into AE / Insert into chest**.
+**Insert to AE2 / Insert to Chests**.
 
 ## AE2 integration
 

@@ -25,7 +25,7 @@
     "gui.advancedschematicannon.settings.skip_missing": "不足ブロックスキップ",
     "gui.advancedschematicannon.settings.protect_be": "ブロックエンティティ保護",
     "gui.advancedschematicannon.emc_placed": "EMCを使用して配置されます。",
-    "gui.advancedschematicannon.storage.ae_chest": "AE2/チェストから取り出し",
+    "gui.advancedschematicannon.storage.ae_chest": "AE2/チェスト",
     "gui.advancedschematicannon.storage.ae_only": "AEのみ",
     "gui.advancedschematicannon.storage.chest_only": "チェストのみ",
     "gui.advancedschematicannon.reuse.on": "概略図を再利用",
@@ -129,5 +129,5 @@
     "asc.wiki.play.fill.back": "ボタン上のホイールで切替",
     "asc.wiki.play.storage.ae": "AEのみ",
     "asc.wiki.play.storage.chest": "チェストのみ",
-    "asc.wiki.play.storage.both": "AE2/チェストから取り出し"
+    "asc.wiki.play.storage.both": "AE2/チェスト"
 }

@@ -19,6 +19,11 @@ import java.util.function.Supplier;
  * over a throwaway block entity, and a server accepts containerId 0 against the player's own inventory. Until
  * 2026-09-27 the sweep's catalogue was TSU's alone, so no ASC screen had been driven by the machine (BelugaAOS
  * improvement log 8f1675).
+ *
+ * <p>The storage value is one box whose label changes with the cannon's mode, and the sweep reads only the label that is
+ * up: "main" shows a new cannon's (AE2 and chests), and the 2026-10-09 sweep passed on a cannon in a mode whose label
+ * fit while the AE2-and-chests one was cut on 10-14. So the four other labels have a state each - the schematic mode's
+ * AE-only and chest-only, the remove module's two destinations.
  */
 final class AscScreenCatalogue {
 
@@ -31,7 +36,8 @@ final class AscScreenCatalogue {
     static List<Entry> table() {
         return List.of(
             new Entry("emc-schematic-cannon", AscScreenCatalogue::cannon,
-                    (s, st) -> ((EMCSchematicCannonScreenV2) s).wikiApplyState(st), "main", "options")
+                    (s, st) -> ((EMCSchematicCannonScreenV2) s).wikiApplyState(st), "main", "options",
+                    "storage-ae-only", "storage-chest-only", "remove-into-ae", "remove-into-chest")
         );
     }
 
