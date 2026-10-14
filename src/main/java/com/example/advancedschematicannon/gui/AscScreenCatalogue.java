@@ -21,9 +21,9 @@ import java.util.function.Supplier;
  * improvement log 8f1675).
  *
  * <p>The storage value is one box whose label changes with the cannon's mode, and the sweep reads only the label that is
- * up: "main" shows a new cannon's (AE2 and chests), and the 2026-10-09 sweep passed on a cannon in a mode whose label
- * fit while the AE2-and-chests one was cut on 10-14. So the four other labels have a state each - the schematic mode's
- * AE-only and chest-only, the remove module's two destinations.
+ * up: "main" shows a new cannon's (AE2 and chests; chests only without AE2), so the other four were never measured. They
+ * have a state each - the schematic mode's AE-only and chest-only, the remove module's two destinations. (The 10-09 sweep
+ * passed for another reason: before BelugaAOS v54, 10-14, its text fit skipped every pushed text, this screen's included.)
  */
 final class AscScreenCatalogue {
 
