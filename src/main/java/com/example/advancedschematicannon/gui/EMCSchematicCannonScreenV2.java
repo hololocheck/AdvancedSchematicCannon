@@ -755,6 +755,16 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         }
     }
 
+    /** The block list's thumb, grabbed and dragged (Manta 2.87.0's dragThumb, R4.19.5). */
+    @Override
+    public boolean onElementDrag(String[] classes, String key, int mouseX, int mouseY,
+                                 int elementX, int elementY, int elementW, int elementH, boolean pressed) {
+        if ("asc-block-thumb-drag".equals(key)) {
+            return blockScroll.dragThumb(mouseY, pressed);
+        }
+        return super.onElementDrag(classes, key, mouseX, mouseY, elementX, elementY, elementW, elementH, pressed);
+    }
+
     /**
      * option strip はモードボタンの真下に出す (「クリックすると設定アイコンが下に出現する」)。
      *

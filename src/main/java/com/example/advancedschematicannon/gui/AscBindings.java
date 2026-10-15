@@ -42,7 +42,7 @@ public final class AscBindings {
             "asc-fe-fill", "asc-fe-label", "asc-emc-label",
             "asc-storage-val", "asc-storage-icon", "asc-speed-val",
             "asc-block-list-visible", "asc-block-scrollbar-visible",
-            "asc-block-thumb-y", "asc-block-thumb-h", "block-list-scroll",
+            "asc-block-thumb-y", "asc-block-thumb-h", "asc-block-thumb-drag", "block-list-scroll",
             "asc-fuel-visible",
             "asc-schematic-mode", "asc-filler-mode",
             "asc-mode-icon", "asc-mode-label", "asc-mode-val", "asc-mode-summary",

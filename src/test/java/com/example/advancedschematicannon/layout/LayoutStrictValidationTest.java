@@ -197,13 +197,26 @@ class LayoutStrictValidationTest {
         assertEquals(List.of("asc-mode-val"), unreferencedKeys(roots));
     }
 
+    @Test
+    @DisplayName("検出器として働くことの確認 — ブロック一覧のつまみの dragKey を消すと、その鍵だけが red になる")
+    void unreferencedDragKeyCheckActuallyDetects() {
+        List<JsonObject> roots = layoutRoots();
+        int removed = 0;
+        for (JsonObject root : roots) {
+            removed += removeAttribute(root, "dragKey", "asc-block-thumb-drag");
+        }
+        assertEquals(1, removed, "dragKey asc-block-thumb-drag が、出荷する layout に見つからない");
+        assertEquals(List.of("asc-block-thumb-drag"), unreferencedKeys(roots));
+    }
+
     /**
      * AscBindings の鍵のうち、どの layout も参照しないもの (整列済み)。binding の参照は Manta の validator 自身に
      * 数えさせる — 空の catalog を渡すと、binding として読む参照をすべて UNRESOLVED_BINDING で名指すので、
      * どの属性が binding かをここに写さずに済む (写すと、Manta が属性を足したときに黙ってずれる)。
-     * wheelKey だけは名前で拾う: Manta の schema では binding ではなく EVENT_ID で、それを照合する軸は validator に
-     * 無い (LayoutValidatorScreen の UNVERIFIABLE_ACTION 撤去の注記) が、AscBindings はこの画面の wheelKey
-     * (onElementWheel が受ける鍵) も並べている。
+     * wheelKey と dragKey だけは名前で拾う: Manta の schema では binding ではなく EVENT_ID で、それを照合する軸は
+     * validator に無い (LayoutValidatorScreen の UNVERIFIABLE_ACTION 撤去の注記) が、AscBindings はこの画面の
+     * wheelKey (onElementWheel が受ける鍵) と dragKey (onElementDrag が受ける鍵 — Manta 2.87.0 のスクロールバーの
+     * つまみ) も並べている。
      */
     private static List<String> unreferencedKeys(List<JsonObject> roots) {
         java.util.Set<String> referenced = new java.util.HashSet<>();
@@ -221,6 +234,7 @@ class LayoutStrictValidationTest {
 
     private static void collectWheelKeys(JsonObject n, java.util.Set<String> out) {
         if (n.has("wheelKey") && n.get("wheelKey").isJsonPrimitive()) out.add(n.get("wheelKey").getAsString());
+        if (n.has("dragKey") && n.get("dragKey").isJsonPrimitive()) out.add(n.get("dragKey").getAsString());
         for (JsonObject kid : kids(n)) collectWheelKeys(kid, out);
     }
 
