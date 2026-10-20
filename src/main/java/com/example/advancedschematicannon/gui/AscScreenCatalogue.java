@@ -24,6 +24,9 @@ import java.util.function.Supplier;
  * up: "main" shows a new cannon's (AE2 and chests; chests only without AE2), so the other four were never measured. They
  * have a state each - the schematic mode's AE-only and chest-only, the remove module's two destinations. (The 10-09 sweep
  * passed for another reason: before BelugaAOS v54, 10-14, its text fit skipped every pushed text, this screen's included.)
+ *
+ * <p>"block-list-long" fills the block list past its grid (user, 2026-10-21): the sweep drags every scrollbar thumb it can
+ * see (BelugaAOS v57), and a new cannon's list is empty, which hides its thumb - so its drag was never checked.
  */
 final class AscScreenCatalogue {
 
@@ -37,7 +40,7 @@ final class AscScreenCatalogue {
         return List.of(
             new Entry("emc-schematic-cannon", AscScreenCatalogue::cannon,
                     (s, st) -> ((EMCSchematicCannonScreenV2) s).wikiApplyState(st), "main", "options",
-                    "storage-ae-only", "storage-chest-only", "remove-into-ae", "remove-into-chest")
+                    "storage-ae-only", "storage-chest-only", "remove-into-ae", "remove-into-chest", "block-list-long")
         );
     }
 

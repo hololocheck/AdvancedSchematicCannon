@@ -1886,6 +1886,24 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
         placedBlocks = 0;
     }
 
+    /**
+     * The block list of BelugaAOS's UI sweep's "block-list-long" state (AscScreenCatalogue): the first {@code count}
+     * blocks of the registry that have an item, so the list holds more than it shows and its scrollbar thumb is up to be
+     * dragged. Called on the catalogue's cannon - a block entity of this client only - and, like the stand-in's, it places,
+     * writes and sends nothing.
+     */
+    public void sweepLongList(int count) {
+        blockSummary.clear();
+        for (Block block : BuiltInRegistries.BLOCK) {
+            if (blockSummary.size() >= count) break;
+            if (block.asItem() != net.minecraft.world.item.Items.AIR) {
+                blockSummary.put(BuiltInRegistries.BLOCK.getKey(block).toString(), 64);
+            }
+        }
+        totalBlocks = 64 * blockSummary.size();
+        placedBlocks = 0;
+    }
+
     /** The blocks a range holds for the stand-in's removal: registry name, count. */
     private static final String[][] WIKI_RANGE = {
             {"minecraft:dirt", "288"}, {"minecraft:stone", "160"}, {"minecraft:grass_block", "96"},

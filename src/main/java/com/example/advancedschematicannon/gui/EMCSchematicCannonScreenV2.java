@@ -909,8 +909,20 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
             case "storage-chest-only" -> cannonIn(false, StorageMode.CHEST_ONLY);
             case "remove-into-ae" -> cannonIn(true, StorageMode.AE_ONLY);
             case "remove-into-chest" -> cannonIn(true, StorageMode.CHEST_ONLY);
+            case "block-list-long" -> blockListLong();
             default -> { }
         }
+    }
+
+    /**
+     * The sweep's "block-list-long": the catalogue's cannon listing twice the blocks the grid shows, so the list's
+     * scrollbar thumb is up to be dragged (BelugaAOS v57 drags every thumb it can see; an empty list hides its thumb).
+     */
+    private void blockListLong() {
+        EMCSchematicCannonBlockEntity be = menu.getBlockEntity();
+        if (be == null) return;
+        be.sweepLongList(2 * GRID_COLS * GRID_ROWS);
+        pushAll();
     }
 
     /**
