@@ -1,35 +1,26 @@
 ---
-title: Advanced Schematic Cannon
+title: Advanced Schematic Cannon Wiki
 id: index
 tags: [overview]
 ---
 
-# Advanced Schematic Cannon
+# Advanced Schematic Cannon Wiki
 
-Create の概略図大砲を土台に、**FE 動力**・**AE2 の ME ストレージ連携**・**ProjectE の EMC** を
-組み合わせた建築支援 Mod です。概略図をそのまま建てるほかに、範囲を指定して埋め立て・撤去する
-**フィラーモード**を持ちます。
+Createの概略図砲を拡張した建築支援Modです。FEで施工し、AE2の資材供給や、ProjectEのEMCと連携できます。概略図を使う施工に加え、範囲を指定するフィラーモードも利用できます。
 
 [[TOC]]
 
-## 収録されているもの
+## 追加されるもの
 
-| | 名前 | 概要 |
-|---|---|---|
-| ブロック | **強化型概略図砲** | 本体。常に利用できます |
-| ブロック | **EMC概略図砲** | **ProjectE が入っているときだけ**追加される上位版 |
-| ブロック | **フレームブロック** | 空中設置杖で置く足場 |
-| アイテム | **範囲指定ボード** | フィラーモードで使う範囲の指定に使います |
-| アイテム | **空中設置杖** | FE を消費してフレームブロックを空中に置きます |
+| 名前 | 役割 |
+|---|---|
+| 強化型概略図砲 | FEで動く建築用の砲 |
+| EMC概略図砲 | ProjectE導入時に追加されるEMC対応版 |
+| フレームブロック | 空中設置杖で置く透明な足場 |
+| [範囲指定ボード](tools/range-board.md) | フィラーモードの範囲を指定 |
+| [空中設置杖](tools/air-placement-wand.md) | FEを使って足場を設置 |
 
 > [!NOTE]
-> **EMC概略図砲は ProjectE が導入されていないとレシピにも creative タブにも出ません。**
-> Mod の登録自体が条件付きなので、これは不具合ではありません。
+> EMC概略図砲は、ProjectEを導入している場合だけ登録されます。未導入時にレシピやクリエイティブタブへ表示されないのは、想定した動作です。
 
-## 読む順番
-
-1. [はじめに](getting-started.md) — 最初の 1 棟を建てるまで
-2. [砲の画面](cannon/overview.md) — GUI の各部
-3. [概略図モード](cannon/schematic-mode.md) / [フィラーモード](cannon/filler-mode.md)
-4. [材料の供給と EMC](cannon/storage.md)
-5. [範囲指定ボード](tools/range-board.md) / [空中設置杖](tools/air-placement-wand.md)
+初めて使う場合は「[はじめに](getting-started.md)」から、画面の操作は「[砲の画面](cannon/overview.md)」からご覧ください。続けて「[概略図モード](cannon/schematic-mode.md)」「[フィラーモード](cannon/filler-mode.md)」「[材料の供給とEMC](cannon/storage.md)」で設定を確認できます。
