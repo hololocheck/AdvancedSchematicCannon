@@ -22,18 +22,15 @@ Spends FE to place **Frame Blocks** in mid-air, for scaffolding or temporary sup
 | **Shift + scroll** | Adjust the placement distance (**1 to 15 blocks**) |
 | **Shift + middle click** | Reset the placement distance to its default |
 
-While the wand is held, a **white outline** marks the target position. No outline is shown
-when the target is not air.
+While the wand is held, a **white outline** marks the target position. No outline is shown when the target is not air.
 
 ## Energy
 
-The remaining charge is on the item tooltip as `Energy: n / max FE`. When it runs out the
-wand reports that energy is insufficient and places nothing.
+The remaining charge is on the item tooltip as `Energy: n / max FE`. When it runs out the wand reports that energy is insufficient and places nothing.
 
 ## Frame Block
 
 ```embed:item id=advancedschematicannon:frame_block size=48 label=true
 ```
 
-The scaffolding block this wand places. Because **Shift + right click removes them all at
-once**, you can put them up while building and clear them away when you are done.
+The scaffolding block this wand places. Because **Shift + right click removes them all at once**, you can put them up while building and clear them away when you are done.

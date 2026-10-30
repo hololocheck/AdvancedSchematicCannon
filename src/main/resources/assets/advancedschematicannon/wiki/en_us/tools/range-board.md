@@ -9,8 +9,7 @@ tags: [tool, item]
 ```embed:item id=advancedschematicannon:range_board size=48 label=true
 ```
 
-Marks the cuboid region that Filler mode works on. While you hold it, a **mode bar** is
-shown at the bottom of the screen.
+Marks the cuboid region that Filler mode works on. While you hold it, a **mode bar** is shown at the bottom of the screen.
 
 [[TOC]]
 
@@ -37,9 +36,7 @@ The selected point follows where you look.
 
 ## The mode bar
 
-While Alt is held, a panel slides up under the bar with **a description of the current
-mode**. The bar is also hidden while the HUD is hidden with F1.
+While Alt is held, a panel slides up under the bar with **a description of the current mode**. The bar is also hidden while the HUD is hidden with F1.
 
 > [!NOTE]
-> A board with a region on it has to be **put into the cannon's schematic slot** to be used.
-> Without that, Filler mode has no region to work on.
+> A board with a region on it has to be **put into the cannon's schematic slot** to be used. Without that, Filler mode has no region to work on.

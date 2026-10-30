@@ -6,9 +6,7 @@ tags: [overview]
 
 # Advanced Schematic Cannon
 
-A building mod built on Create's Schematicannon, adding **FE power**, **AE2 ME storage
-integration** and **ProjectE EMC**. Besides printing a schematic as-is, it has a
-**Filler mode** that fills or clears a region you mark out.
+A building mod built on Create's Schematicannon, adding **FE power**, **AE2 ME storage integration** and **ProjectE EMC**. Besides printing a schematic as-is, it has a **Filler mode** that fills or clears a region you mark out.
 
 [[TOC]]
 
@@ -23,8 +21,7 @@ integration** and **ProjectE EMC**. Besides printing a schematic as-is, it has a
 | Item | **Air Placement Wand** | Spends FE to place Frame Blocks in mid-air |
 
 > [!NOTE]
-> **Without ProjectE, the EMC Schematic Cannon appears in neither recipes nor the creative
-> tab.** Its registration itself is conditional, so this is not a bug.
+> **Without ProjectE, the EMC Schematic Cannon appears in neither recipes nor the creative tab.** Its registration itself is conditional, so this is not a bug.
 
 ## Reading order
 

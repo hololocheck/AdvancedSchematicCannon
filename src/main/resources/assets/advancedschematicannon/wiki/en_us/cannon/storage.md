@@ -10,9 +10,7 @@ tags: [ae2, projecte]
 
 ## Storage selection
 
-The **Storage** control decides where materials are taken from. Hover the value and scroll
-to change it. It only turns **while AE2 is installed**; without AE2 it stays at **From Chests Only** (the sample cannon in
-the picture below runs as if AE2 were there).
+The **Storage** control decides where materials are taken from. Hover the value and scroll to change it. It only turns **while AE2 is installed**; without AE2 it stays at **From Chests Only** (the sample cannon in the picture below runs as if AE2 were there).
 
 ![](bws:advancedschematicannon:wiki/screens/emc-schematic-cannon__storage__en_us.png)
 
@@ -22,21 +20,16 @@ the picture below runs as if AE2 were there).
 | **From AE2 Only** | The ME network only |
 | **From Chests Only** | Adjacent containers only |
 
-In Remove mode the meaning flips to the destination, and the choice narrows to
-**Insert to AE2 / Insert to Chests**.
+In Remove mode the meaning flips to the destination, and the choice narrows to **Insert to AE2 / Insert to Chests**.
 
 ## AE2 integration
 
-Connecting an AE2 cable to the cannon provides **power and ME storage access at the same
-time**.
+Connecting an AE2 cable to the cannon provides **power and ME storage access at the same time**.
 
-When a material is not in the ME network the cannon **requests autocrafting** (which runs on
-the AE2 side if a pattern exists).
+When a material is not in the ME network the cannon **requests autocrafting** (which runs on the AE2 side if a pattern exists).
 
 > [!NOTE]
-> Autocrafting only goes as far as submitting the request. **The cannon does not wait for
-> the craft to finish** — that pass counts the block as missing and extraction is retried
-> once the item arrives.
+> Autocrafting only goes as far as submitting the request. **The cannon does not wait for the craft to finish** — that pass counts the block as missing and extraction is retried once the item arrives.
 
 ## EMC (ProjectE)
 
@@ -45,14 +38,9 @@ The **EMC Schematic Cannon** is only added when ProjectE is installed.
 - The screen gains a **Use EMC** toggle and an **EMC fuel slot**
 - With Use EMC on, blocks can be placed by spending EMC even with no material in stock
 - In Remove mode, collected blocks can be converted to EMC
-- Items put into the fuel slot are converted to EMC and added to the **owner's** EMC.
-  **Ctrl + left click** sends an item straight from your inventory into that slot
+- Items put into the fuel slot are converted to EMC and added to the **owner's** EMC. **Ctrl + left click** sends an item straight from your inventory into that slot
 
 > [!NOTE]
-> Conversion needs three things: the cannon must **have an owner**, that **owner must be
-> online**, and the item must **have an EMC value**. While the owner is offline nothing is
-> added and the fuel stays in the slot. Whether the cannon is running does not matter —
-> fuel is converted while idle too.
+> Conversion needs three things: the cannon must **have an owner**, that **owner must be online**, and the item must **have an EMC value**. While the owner is offline nothing is added and the fuel stays in the slot. Whether the cannon is running does not matter — fuel is converted while idle too.
 
-The Enhanced Schematic Cannon shows nothing EMC-related; both the slot and the toggle are
-hidden.
+The Enhanced Schematic Cannon shows nothing EMC-related; both the slot and the toggle are hidden.

@@ -6,8 +6,7 @@ tags: [mode]
 
 # Filler mode
 
-Works on **the region marked** with the [Range Board](../tools/range-board.md) instead of a
-schematic.
+Works on **the region marked** with the [Range Board](../tools/range-board.md) instead of a schematic.
 
 [[TOC]]
 
@@ -38,11 +37,9 @@ Click the mode button to reveal the seven icons.
 
 ## What is different in Remove
 
-In **Remove**, the grid on the left is not material slots — it becomes the **list of blocks
-found inside the region**. Where they go follows the storage setting.
+In **Remove**, the grid on the left is not material slots — it becomes the **list of blocks found inside the region**. Where they go follows the storage setting.
 
 - **Insert to AE2** — into the ME network
 - **Insert to Chests** — into adjacent containers
 
-On the EMC Schematic Cannon with **Use EMC** enabled, collected blocks can be converted to
-EMC instead.
+On the EMC Schematic Cannon with **Use EMC** enabled, collected blocks can be converted to EMC instead.
