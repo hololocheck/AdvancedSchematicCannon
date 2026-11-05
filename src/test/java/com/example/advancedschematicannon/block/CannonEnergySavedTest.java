@@ -64,7 +64,8 @@ class CannonEnergySavedTest {
             + "(?:\\w*EnergyStorage\\s*\\([^;{]*\\)\\s*\\{|(?:IEnergyStorage|EnergyStorage|ComponentEnergyStorage)\\s*\\()");
     /** A setChanged() override: the storage's bare setChanged() call resolves to it. */
     private static final Pattern MARK_OVERRIDE = Pattern.compile("\\bvoid setChanged\\s*\\(\\s*\\)\\s*\\{");
-    private static final Pattern FIELD_WRITE = Pattern.compile("\\.energy\\b");
+    /** The block entity extends BlockEntity itself, so no class between them can override setChanged() unseen. */
+    private static final Pattern DIRECT_BASE = Pattern.compile("\\bclass EMCSchematicCannonBlockEntity extends BlockEntity\\b");
 
     @Test
     @DisplayName("the cannon's FE storage marks the cannon to be saved when it receives FE")
@@ -109,6 +110,9 @@ class CannonEnergySavedTest {
                         "super(capacity, capacity, 0, 0);\n        }\n        void setChanged() {\n        }\n"),
                 new Mutant("the block entity's setChanged() marks nothing", BLOCK_ENTITY, null, getter,
                         "@Override\n    public void setChanged() {\n        syncToClient();\n    }\n    " + getter),
+                new Mutant("the block entity extends a class between", BLOCK_ENTITY, null,
+                        "class EMCSchematicCannonBlockEntity extends BlockEntity",
+                        "class EMCSchematicCannonBlockEntity extends CannonBase"),
                 new Mutant("the storage before 2026-11-06", BLOCK_ENTITY, null,
                         "private final class InternalEnergyStorage extends EnergyStorage {\n"
                                 + "        InternalEnergyStorage(int capacity) {\n"
@@ -136,7 +140,11 @@ class CannonEnergySavedTest {
                         "(be, direction) -> new net.neoforged.neoforge.energy.EnergyStorage(1)"),
                 new Mutant("the AE2 pull writes around the storage", BLOCK_ENTITY, pull,
                         "energyStorage.receiveEnergy(received, false);",
-                        "energyStorage.setStoredInternal(energyStorage.getEnergyStored() + received);"));
+                        "energyStorage.setStoredInternal(energyStorage.getEnergyStored() + received);"),
+                new Mutant("the AE2 pull also writes around the storage", BLOCK_ENTITY, pull,
+                        "energyStorage.receiveEnergy(received, false);\n            }",
+                        "energyStorage.receiveEnergy(received, false);\n            } else {\n"
+                                + "                energyStorage.setStoredInternal(MAX_ENERGY);\n            }"));
         List<Mutant> list = List.of(
                 new Mutant("a new storage class", WAND, null, "public class WandEnergyStorage",
                         "class SpareStorage extends EnergyStorage {\n    SpareStorage() { super(1); }\n}\n\n"
@@ -197,6 +205,9 @@ class CannonEnergySavedTest {
             return "receiveEnergy does not call setChanged() exactly when a receive that was not simulated took FE: "
                     + body;
         }
+        if (!DIRECT_BASE.matcher(code).find()) {
+            return "the block entity does not extend BlockEntity itself: a class between could drop setChanged()";
+        }
         Matcher override = MARK_OVERRIDE.matcher(code);
         while (override.find()) {
             int at = override.end() - 1;
@@ -227,7 +238,8 @@ class CannonEnergySavedTest {
         if (!pull.contains("energyStorage.receiveEnergy(received, false);")) {
             return "the AE2 pull does not receive through energyStorage.receiveEnergy";
         }
-        if (pull.contains("setStoredInternal(") || FIELD_WRITE.matcher(pull).find()) {
+        // The only other write the block entity can make: EnergyStorage's own field is protected, out of the pull's reach.
+        if (pull.contains("setStoredInternal(")) {
             return "the AE2 pull writes the stored FE around receiveEnergy";
         }
         return null;
