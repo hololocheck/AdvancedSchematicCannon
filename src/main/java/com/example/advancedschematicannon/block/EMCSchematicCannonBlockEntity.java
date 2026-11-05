@@ -72,10 +72,23 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
      * サブクラスで EnergyStorage.energy(protected) に直接アクセスする。
      * 旧実装のリフレクションは NeoForge アップデートでフィールド名が変わると
      * 起動不能になるため廃止。
+     *
+     * <p>What it receives - another mod's push through the FE capability, and the AE2 pull - marks the cannon to be
+     * saved: EnergyStorage's own receive does not, and the tick marks it only while it places or its slots change, so an
+     * idle cannon's FE was saved only if something else marked its chunk (measured 2026-11-06, BelugaAOS run
+     * 20261106-010519-0845bc: charged to 100000 through a cable and through AE2, both read 0 after the world was reopened).
      */
-    private static final class InternalEnergyStorage extends EnergyStorage {
+    private final class InternalEnergyStorage extends EnergyStorage {
         InternalEnergyStorage(int capacity) {
             super(capacity, capacity, 0, 0);
+        }
+        @Override
+        public int receiveEnergy(int toReceive, boolean simulate) {
+            int got = super.receiveEnergy(toReceive, simulate);
+            if (got > 0 && !simulate) {
+                setChanged();
+            }
+            return got;
         }
         void consumeInternal(int amount) {
             this.energy = Math.max(0, this.energy - amount);
