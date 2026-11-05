@@ -144,7 +144,11 @@ class CannonEnergySavedTest {
                 new Mutant("the AE2 pull also writes around the storage", BLOCK_ENTITY, pull,
                         "energyStorage.receiveEnergy(received, false);\n            }",
                         "energyStorage.receiveEnergy(received, false);\n            } else {\n"
-                                + "                energyStorage.setStoredInternal(MAX_ENERGY);\n            }"));
+                                + "                energyStorage.setStoredInternal(MAX_ENERGY);\n            }"),
+                new Mutant("the AE2 pull adds through a negative consume", BLOCK_ENTITY, pull,
+                        "energyStorage.receiveEnergy(received, false);\n            }",
+                        "energyStorage.receiveEnergy(received, false);\n            } else {\n"
+                                + "                energyStorage.consumeInternal(-maxPerTick);\n            }"));
         List<Mutant> list = List.of(
                 new Mutant("a new storage class", WAND, null, "public class WandEnergyStorage",
                         "class SpareStorage extends EnergyStorage {\n    SpareStorage() { super(1); }\n}\n\n"
@@ -238,8 +242,9 @@ class CannonEnergySavedTest {
         if (!pull.contains("energyStorage.receiveEnergy(received, false);")) {
             return "the AE2 pull does not receive through energyStorage.receiveEnergy";
         }
-        // The only other write the block entity can make: EnergyStorage's own field is protected, out of the pull's reach.
-        if (pull.contains("setStoredInternal(")) {
+        // The storage's own writes, which mark nothing (a negative consume adds FE). EnergyStorage's field itself is
+        // protected, out of the pull's reach.
+        if (pull.contains("setStoredInternal(") || pull.contains("consumeInternal(")) {
             return "the AE2 pull writes the stored FE around receiveEnergy";
         }
         return null;
