@@ -12,5 +12,5 @@ Advanced Schematic Cannon の動画です。カードを押すと、Minecraft �
 
 [範囲指定ボード](tools/range-board.md)で範囲を決め、建材と一緒に砲へ入れて、[フィラーモード](cannon/filler-mode.md)で壁を建てるまでの動画です。
 
-```embed:youtube url=https://youtu.be/aa_LqULAXZ4 title="ASC Guide: Build with Filler Mode"
+```embed:youtube url=https://youtu.be/aa_LqULAXZ4 title="ASC Guide: Build with Filler Mode" url.ja=https://youtu.be/h8YCCPYB_rI url.zh=https://youtu.be/ib7FLXEvLg8 title.ja="ASC ガイド: フィラーモードで建てる" title.zh="ASC 指南：用 Filler Mode 建造"
 ```
