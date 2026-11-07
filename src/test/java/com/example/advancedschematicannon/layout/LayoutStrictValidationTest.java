@@ -376,7 +376,7 @@ class LayoutStrictValidationTest {
      * @return en_us.json の全キー。取得できなければ null (= 未提供、検査しない)。
      *
      * <p>en_us を正とするのは、翻訳漏れではなく<b>キーそのものの不在</b>を見たいから。
-     * ja_jp との差分は {@link #langFilesDeclareTheSameKeys()} が別に見る。
+     * 各言語との差分は {@link #langFilesDeclareTheSameKeys()} が別に見る。
      */
     private static java.util.Set<String> i18nKeys() {
         Path p = resolveFromAnyAncestor(
@@ -391,25 +391,34 @@ class LayoutStrictValidationTest {
         }
     }
 
+    /** en_us 以外に同梱する言語。zh_hk / zh_tw は zh_cn から変換したもの (2026-11-07)。 */
+    private static final List<String> LOCALES = List.of("ja_jp", "zh_cn", "zh_hk", "zh_tw");
+
     @Test
-    @DisplayName("**en_us と ja_jp が同じキー集合を持つ** (片方だけ足すと実機で生キーが出る)")
+    @DisplayName("**en_us と各言語 (ja_jp・zh_cn・zh_hk・zh_tw) が同じキー集合を持つ** (片方だけ足すと実機で生キーか英語が出る)")
     void langFilesDeclareTheSameKeys() {
         Path en = resolveFromAnyAncestor(
                 "src/main/resources/assets/advancedschematicannon/lang/en_us.json");
-        Path ja = resolveFromAnyAncestor(
-                "src/main/resources/assets/advancedschematicannon/lang/ja_jp.json");
-        assertTrue(en != null && ja != null, "lang ファイルが見つからない");
+        assertTrue(en != null, "lang ファイルが見つからない");
         try {
             var enKeys = JsonParser.parseString(Files.readString(en, StandardCharsets.UTF_8))
                     .getAsJsonObject().keySet();
-            var jaKeys = JsonParser.parseString(Files.readString(ja, StandardCharsets.UTF_8))
-                    .getAsJsonObject().keySet();
-            var onlyEn = new java.util.TreeSet<>(enKeys);
-            onlyEn.removeAll(jaKeys);
-            var onlyJa = new java.util.TreeSet<>(jaKeys);
-            onlyJa.removeAll(enKeys);
-            assertTrue(onlyEn.isEmpty() && onlyJa.isEmpty(),
-                    "en のみ: " + onlyEn + " / ja のみ: " + onlyJa);
+            List<String> differences = new ArrayList<>();
+            for (String locale : LOCALES) {
+                Path other = resolveFromAnyAncestor(
+                        "src/main/resources/assets/advancedschematicannon/lang/" + locale + ".json");
+                assertTrue(other != null, locale + ".json が見つからない");
+                var otherKeys = JsonParser.parseString(Files.readString(other, StandardCharsets.UTF_8))
+                        .getAsJsonObject().keySet();
+                var onlyEn = new java.util.TreeSet<>(enKeys);
+                onlyEn.removeAll(otherKeys);
+                var onlyOther = new java.util.TreeSet<>(otherKeys);
+                onlyOther.removeAll(enKeys);
+                if (!onlyEn.isEmpty() || !onlyOther.isEmpty()) {
+                    differences.add("en のみ (" + locale + " に無い): " + onlyEn + " / " + locale + " のみ: " + onlyOther);
+                }
+            }
+            assertTrue(differences.isEmpty(), String.join("\n", differences));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
