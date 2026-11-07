@@ -99,7 +99,7 @@
     "gui.advancedschematicannon.storage.hint": "材料的取用來源。拆除模式下則為存入位置。懸停時滾動滾輪可更改。",
     "gui.advancedschematicannon.settings.replace_section": "替換模式",
     "gui.advancedschematicannon.filler.section": "填充器模塊",
-    "gui.advancedschematicannon.mode.hint": "選擇工作模式及其選項。點選開啟。",
+    "gui.advancedschematicannon.mode.hint": "工作模式。滾動滾輪可在藍圖模式與填充器模式之間切換，點選可開啟該模式的選項。",
     "gui.advancedschematicannon.owner": "所有者",
     "gui.advancedschematicannon.hint.start": "開始放置方塊。暫停時按下可從中斷處繼續。",
     "gui.advancedschematicannon.hint.pause": "暫停放置。按開始按鈕可從中斷處繼續。",
