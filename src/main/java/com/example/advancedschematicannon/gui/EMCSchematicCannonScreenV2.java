@@ -230,8 +230,6 @@ public class EMCSchematicCannonScreenV2 extends JsonLayoutScreen<EMCSchematicCan
         HINTS.put("asc-mode-btn", "gui.advancedschematicannon.mode.hint");
         HINTS.put("asc-owner-face-box", "gui.advancedschematicannon.hint.owner");
         HINTS.put("asc-owner-face-canvas", "gui.advancedschematicannon.hint.owner");
-        HINTS.put("asc-mode-schematic", "gui.advancedschematicannon.mode.schematic");
-        HINTS.put("asc-mode-filler", "gui.advancedschematicannon.mode.filler");
         HINTS.put("asc-dont-replace", "gui.advancedschematicannon.hint.dont_replace");
         HINTS.put("asc-replace-solid", "gui.advancedschematicannon.hint.replace_solid");
         HINTS.put("asc-replace-any", "gui.advancedschematicannon.hint.replace_any");

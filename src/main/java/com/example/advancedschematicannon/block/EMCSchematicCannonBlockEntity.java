@@ -197,6 +197,9 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
     // フィラーモード設定
     private boolean fillerMode = false;
     private FillerModule fillerModule = FillerModule.FILL;
+    // The kind of job the pending placements belong to - a filler module's (true) or a schematic's - fixed when they
+    // are loaded. The replace rule reads this, not fillerMode: the mode can be switched while a job runs or is paused.
+    private boolean fillerJob = false;
     // フィラーモード用: 範囲指定ボードから読み取った範囲
     private BlockPos fillerPos1 = null;
     private BlockPos fillerPos2 = null;
@@ -453,32 +456,9 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
             BlockState targetState = originalState;
 
 
-            // 置換モードチェック
+            // 置換モードチェック (概略図モードだけ。フィラーモードは置換モードを使わない — CannonReplaceRule)
             BlockState existingState = serverLevel.getBlockState(targetPos);
-            boolean canPlace = switch (replaceMode) {
-                case DONT_REPLACE -> {
-                    // 空気ブロックは配置しない（既存ブロックを破壊しない）
-                    if (targetState.isAir()) yield false;
-                    yield existingState.isAir() || existingState.canBeReplaced();
-                }
-                case REPLACE_SOLID -> {
-                    if (targetState.isAir()) yield false;
-                    yield existingState.isAir() || existingState.canBeReplaced()
-                            || !existingState.getFluidState().isEmpty()
-                            || (isSolidBlock(existingState) && isSolidBlock(targetState));
-                }
-                case REPLACE_ANY -> true;
-                case REPLACE_EMPTY -> {
-                    if (targetState.isAir()) {
-                        // 概略図が空気 → 既存の固体ブロックを空気に置換（削除）
-                        yield !existingState.isAir();
-                    } else {
-                        // 概略図がブロック → 空き場所にだけ設置
-                        yield existingState.isAir() || existingState.canBeReplaced()
-                                || !existingState.getFluidState().isEmpty();
-                    }
-                }
-            };
+            boolean canPlace = CannonReplaceRule.mayPlace(replaceMode, fillerJob, spot(targetState), spot(existingState));
 
             if (!canPlace) {
                 it.remove();
@@ -637,7 +617,8 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
             missingBlockName = "";
 
             // フィラーモード撤去: 既存ブロックのアイテムをEMC変換またはストレージに搬入
-            if (fillerMode && fillerModule == FillerModule.REMOVE && targetState.isAir()) {
+            // The job's kind, not the mode switch: a removal turned to the schematic mode mid-way still collects.
+            if (fillerJob && fillerModule == FillerModule.REMOVE && targetState.isAir()) {
                 BlockState removedState = existingState;
                 if (!removedState.isAir()) {
                     ItemStack removedItem = getItemForBlock(removedState);
@@ -761,8 +742,9 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
     }
 
 
-    private static boolean isSolidBlock(BlockState state) {
-        return !state.isAir() && !state.canBeReplaced() && state.getFluidState().isEmpty();
+    /** The facts of a block state {@link CannonReplaceRule} reads. */
+    private static CannonReplaceRule.Spot spot(BlockState state) {
+        return new CannonReplaceRule.Spot(state.isAir(), state.canBeReplaced(), !state.getFluidState().isEmpty());
     }
 
     /**
@@ -903,6 +885,7 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
 
         // フィラーモード
         tag.putBoolean("FillerMode", fillerMode);
+        tag.putBoolean("FillerJob", fillerJob);
         tag.putString("FillerModule", fillerModule.name());
         if (fillerPos1 != null) {
             tag.putInt("FillerPos1X", fillerPos1.getX());
@@ -1100,7 +1083,7 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
                 }
             }
 
-            loadPlacements(placements);
+            loadPlacements(placements, false);
             return true;
 
         } catch (Exception e) {
@@ -2047,7 +2030,7 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
 
         if (placements.isEmpty()) return false;
 
-        loadPlacements(placements);
+        loadPlacements(placements, true);
         // 撤去モード: removeSummaryをblockSummaryにコピー
         if (fillerModule == FillerModule.REMOVE && !removeSummary.isEmpty()) {
             blockSummary.clear();
@@ -2280,9 +2263,11 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
         return placements;
     }
 
-    public void loadPlacements(List<BlockPlacement> placements) {
+    /** Loads a job's placements; {@code fillerJob} says whether a filler module generated them (else a schematic). */
+    public void loadPlacements(List<BlockPlacement> placements, boolean fillerJob) {
         pendingPlacements.clear();
         pendingPlacements.addAll(placements);
+        this.fillerJob = fillerJob;
         totalBlocks = placements.size();
         placedBlocks = 0;
         state = State.IDLE;
@@ -2490,6 +2475,7 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
 
         // フィラーモード
         tag.putBoolean("FillerMode", fillerMode);
+        tag.putBoolean("FillerJob", fillerJob);
         tag.putString("FillerModule", fillerModule.name());
         if (fillerPos1 != null) {
             tag.putInt("FillerPos1X", fillerPos1.getX());
@@ -2600,6 +2586,8 @@ public class EMCSchematicCannonBlockEntity extends BlockEntity implements MenuPr
 
         // フィラーモード
         if (tag.contains("FillerMode")) fillerMode = tag.getBoolean("FillerMode");
+        // A save from before FillerJob existed: the job is the kind of the mode it was saved in.
+        fillerJob = tag.contains("FillerJob") ? tag.getBoolean("FillerJob") : fillerMode;
         if (tag.contains("FillerModule")) {
             try { fillerModule = FillerModule.valueOf(tag.getString("FillerModule")); }
             catch (Exception e) { fillerModule = FillerModule.FILL; }

@@ -27,13 +27,16 @@ Click the mode button to reveal the seven icons.
 
 | Module | Behaviour |
 |---|---|
-| **Fill** | Fill the air inside the region with your materials |
+| **Fill** | Fill the region with your materials, from the bottom layer up. Mobs inside the region are removed |
 | **Erase** | Clear the whole region to air |
 | **Remove** | Collect the blocks inside the region |
 | **Wall** | Build only the side faces of the region |
 | **Tower** | Stack columns up from the base of the region |
 | **Box** | Build the outer shell of the region (all six faces) |
 | **Circular wall** | Build a cylindrical wall inscribed in the region |
+
+> [!NOTE]
+> Filler mode does not use the [replace modes](schematic-mode.md) of Schematic mode: it always replaces the blocks already inside the region, and Erase and Remove clear every block in it. The two switches (Skip Missing Blocks, Protect Block Entities) apply in Filler mode too, as set in Schematic mode.
 
 ## What is different in Remove
 

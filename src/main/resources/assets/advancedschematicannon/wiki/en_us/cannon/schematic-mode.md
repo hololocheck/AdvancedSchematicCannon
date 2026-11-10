@@ -23,6 +23,8 @@ These decide what happens where something already stands. Click the mode button 
 | **Replace solid with any** | Replace existing solid blocks with whatever the schematic has, air included |
 | **Replace solid with empty** | Break solid blocks that the schematic leaves as air |
 
+The replace mode applies to Schematic mode only: [Filler mode](filler-mode.md) always replaces what stands in its region.
+
 ## The skip and protect switches {#switches}
 
 The two switches to the right of the replace icons: the skip icon and the shield icon. Both start off.
