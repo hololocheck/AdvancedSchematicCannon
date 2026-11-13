@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * 範囲指定ボード - station sound systemから移植。
  * 右クリックでブロック位置を記録し、2点で範囲を指定する。
- * シフト+スクロールで編集する点を選択、シフト+左クリックで解除。
+ * シフト+スクロールで編集する点を選択、シフト+右クリックで解除 (シフト+左クリックは点の選択を外すだけ)。
  */
 public class RangeBoardItem extends Item {
 
