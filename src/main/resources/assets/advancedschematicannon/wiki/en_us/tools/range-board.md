@@ -30,7 +30,8 @@ For fixing just one corner of a region you already marked.
 |---|---|
 | **Alt + scroll** | Switch between Normal and Edit |
 | **Shift + scroll** | Pick the point to edit: none, Pos1, Pos2 |
-| **Shift + left click** | Clear only the selected point |
+| **Shift + right click** | Clear only the selected point |
+| **Shift + left click** | Deselect the point (its position stays) |
 
 The selected point follows where you look.
 
